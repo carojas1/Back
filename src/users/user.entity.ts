@@ -2,7 +2,7 @@
 import { Role } from 'src/auth/roles.enum';
 import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
 
-@Entity()
+@Entity('usuario') // 🔥 Fuerza el nombre de la tabla
 export class User {
   @PrimaryGeneratedColumn()
   id: number;
@@ -16,3 +16,4 @@ export class User {
   @Column()
   rol: Role;
 }
+
