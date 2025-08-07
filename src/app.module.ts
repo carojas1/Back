@@ -12,11 +12,11 @@ import { AlertModule } from './alert.module';
   imports: [
     TypeOrmModule.forRoot({
       type: 'postgres',
-      host: 'postgres.railway.internal',
+      host: 'localhost',
       port: 5432,
       username: 'postgres',
-      password: 'EqFBhogvrQFJrqlQLIAjcebOWpehvEOf',
-      database: 'railway',
+      password: '123456',
+      database: 'auth_db',
       autoLoadEntities: true,   // detecta entidades automáticamente
       synchronize: true,        // ¡NO usar en producción!
     }),
