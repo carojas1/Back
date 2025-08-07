@@ -1,32 +1,57 @@
-// src/auth/auth.service.ts
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { User } from '../users/user.entity';
+import { RegisterDto } from './dto/register/create-user.dto';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class AuthService {
-  private users: { id: number; nombre: string; email: string; password: string }[] = [];
+  constructor(
+    @InjectRepository(User)
+    private userRepository: Repository<User>,
+    private jwtService: JwtService,
+  ) {}
 
-  constructor(private jwtService: JwtService) {}
+  async register(dto: RegisterDto) {
+    const exists = await this.userRepository.findOne({ where: { email: dto.email } });
+    if (exists) {
+      throw new BadRequestException('El usuario ya existe');
+    }
 
-  async register(nombre: string, email: string, password: string) {
-    const hashed = await bcrypt.hash(password, 10);
-    const user = {
-      id: Date.now(),
-      nombre,
-      email,
-      password: hashed,
-    };
-    this.users.push(user);
-    return { message: 'Usuario creado' };
+    const hashedPassword = await bcrypt.hash(dto.password, 10);
+
+    const user = this.userRepository.create({
+      nombre: dto.nombre,
+      email: dto.email,
+      telefono: dto.telefono,
+      password: hashedPassword,
+      rol: dto.rol || 'user',
+    });
+
+    await this.userRepository.save(user);
+
+    // Devuelve usuario sin password
+    const { password, ...result } = user;
+    return result;
   }
 
   async login(email: string, password: string) {
-    const user = this.users.find((u) => u.email === email);
-    if (!user || !(await bcrypt.compare(password, user.password))) {
-      throw new UnauthorizedException('Credenciales inválidas');
-    }
-    const payload = { sub: user.id, email: user.email };
-    return { access_token: this.jwtService.sign(payload) };
+    const user = await this.userRepository.findOne({ where: { email } });
+    if (!user) throw new BadRequestException('Usuario o contraseña incorrectos');
+
+    const valid = await bcrypt.compare(password, user.password);
+    if (!valid) throw new BadRequestException('Usuario o contraseña incorrectos');
+
+    // Genera JWT con el nombre incluido
+    const payload = { id: user.id, email: user.email, nombre: user.nombre, rol: user.rol };
+    const access_token = this.jwtService.sign(payload, { expiresIn: '7d' });
+
+    // Devuelve token y datos básicos
+    return {
+      access_token,
+      user: { id: user.id, nombre: user.nombre, email: user.email, rol: user.rol }
+    };
   }
 }

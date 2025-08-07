@@ -1,3 +1,4 @@
+// src/auth/jwt.strategy.ts
 import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
@@ -8,11 +9,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: 'jwt-secret', // usa env en producción
+      secretOrKey: 'tu_jwt_secret', // Usa la misma secret que tu AuthModule
     });
   }
 
   async validate(payload: any) {
-    return { id: payload.sub, email: payload.email };
+    return { id: payload.id, email: payload.email, nombre: payload.nombre, rol: payload.rol };
   }
 }

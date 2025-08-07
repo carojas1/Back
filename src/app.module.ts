@@ -1,9 +1,12 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
+// Importa TODOS los módulos propios aquí:
 import { AuthModule } from './auth/auth.module';
 import { ClientesModule } from './clientes/clientes.module';
-import { UsersModule } from './users/users.module';
+import { UsersModule } from './users/users.module'; // <-- Importa tu módulo de usuarios aquí
+import { ReportsModule } from './reports.module';
+import { AlertModule } from './alert.module';
 
 @Module({
   imports: [
@@ -11,15 +14,17 @@ import { UsersModule } from './users/users.module';
       type: 'postgres',
       host: 'localhost',
       port: 5432,
-      username: 'postgres',          // Cambia si usas otro usuario
-      password: '123456',     // Pega tu contraseña local real
+      username: 'postgres',
+      password: '123456',
       database: 'auth_db',
-      autoLoadEntities: true,
-      synchronize: true,             // true para desarrollo, false si ya tienes tablas hechas
+      autoLoadEntities: true,   // detecta entidades automáticamente
+      synchronize: true,        // ¡NO usar en producción!
     }),
     AuthModule,
     ClientesModule,
-    UsersModule,
+    UsersModule,   // <-- ¡Debe estar aquí!
+    ReportsModule,
+    AlertModule,
   ],
 })
 export class AppModule {}

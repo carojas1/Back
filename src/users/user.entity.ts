@@ -1,19 +1,22 @@
-// src/users/user.entity.ts
-import { Role } from 'src/auth/roles.enum';
-import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
 
-@Entity('usuario') // 🔥 Fuerza el nombre de la tabla
+@Entity()
 export class User {
   @PrimaryGeneratedColumn()
   id: number;
 
   @Column()
+  nombre: string;
+
+  @Column({ unique: true })
   email: string;
+
+  @Column()
+  telefono: string;
 
   @Column()
   password: string;
 
   @Column()
-  rol: Role;
+  rol: string;
 }
-
