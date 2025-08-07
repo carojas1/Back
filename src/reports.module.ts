@@ -2,14 +2,15 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ReportsService } from './reports.service';
 import { ReportsController } from './reports.controller';
-import { Alert } from './alert.entity'; // Ajusta la ruta si está en otra carpeta
-import { ExportHistory } from './export-history.entity';
+import { Alert } from './alert.entity';
+import { ExportHistory } from './export-history.entity'; // ← ESTA ES LA FORMA CORRECTA
+
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Alert, ExportHistory]), // Inyecta ambos repositorios
+    TypeOrmModule.forFeature([Alert, ExportHistory]), // ← AQUÍ DIRECTO
   ],
   controllers: [ReportsController],
   providers: [ReportsService],
-  exports: [ReportsService], // Exporta el service si otro módulo lo usa
+  exports: [ReportsService],
 })
 export class ReportsModule {}
