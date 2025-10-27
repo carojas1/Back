@@ -1,15 +1,33 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
+import helmet from 'helmet';
+import * as cookieParser from 'cookie-parser';
+import { ValidationPipe } from '@nestjs/common';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  // Seguridad básica
+  app.use(helmet());
+  app.use(cookieParser());
+
+  // CORS solo desde tu frontend
   app.enableCors({
-    origin: '*', // Permite cualquier origen (desarrollo)
+    origin: [
+      'http://localhost:4200',
+      'https://alerta-vision-frontend.vercel.app'
+    ],
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
   });
 
-  // ¡AQUÍ EL CAMBIO!
-  await app.listen(3000, '0.0.0.0'); // Así tu ESP32 y cualquier PC/móvil pueden conectarse por IP
+  
+  app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
+
+  
+  const port = process.env.PORT || 3000;
+  await app.listen(port, '0.0.0.0');
+  console.log(`✅ Servidor corriendo en http://localhost:${port}`);
 }
 bootstrap();

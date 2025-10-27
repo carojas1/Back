@@ -19,5 +19,5 @@ export class Alert {
   telefonoUsuario: string;
 
   @CreateDateColumn({ type: 'timestamp' })
-  created_at: Date;   // <-- este campo es el que guarda la fecha
+  created_at: Date;   
 }
