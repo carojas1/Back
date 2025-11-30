@@ -1,9 +1,22 @@
-// src/auth/dto/register/register.dto.ts
-import { Role } from '../../roles.enum';
+
+import { IsEmail, IsOptional, IsString, MinLength } from 'class-validator';
 
 export class RegisterDto {
+  @IsString()
   nombre: string;
+
+  @IsEmail()
   email: string;
+
+  @IsString()
+  @MinLength(6)
   password: string;
-  rol: Role;
+
+  @IsOptional()
+  @IsString()
+  telefono?: string;
+
+  @IsOptional()
+  @IsString()
+  rol?: string;
 }

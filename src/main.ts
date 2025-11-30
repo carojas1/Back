@@ -7,11 +7,11 @@ import { ValidationPipe } from '@nestjs/common';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // Seguridad básica
+  
   app.use(helmet());
   app.use(cookieParser());
 
-  // CORS solo desde tu frontend
+  
   app.enableCors({
     origin: [
       'http://localhost:4200',

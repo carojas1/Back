@@ -32,7 +32,7 @@ export class AuthService {
 
     await this.userRepository.save(user);
 
-    // Devuelve usuario sin password
+   
     const { password, ...result } = user;
     return result;
   }
@@ -44,11 +44,11 @@ export class AuthService {
     const valid = await bcrypt.compare(password, user.password);
     if (!valid) throw new BadRequestException('Usuario o contraseña incorrectos');
 
-    // Genera JWT con el nombre incluido
+    // Genera JWT con el nombre incluido muy necesario
     const payload = { id: user.id, email: user.email, nombre: user.nombre, rol: user.rol };
     const access_token = this.jwtService.sign(payload, { expiresIn: '7d' });
 
-    // Devuelve token y datos básicos
+    // Devuelve token y datos básicos acuerdate
     return {
       access_token,
       user: { id: user.id, nombre: user.nombre, email: user.email, rol: user.rol }

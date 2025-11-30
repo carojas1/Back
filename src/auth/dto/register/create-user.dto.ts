@@ -1,8 +1,22 @@
-// src/auth/dto/register/create-user.dto.ts
+// src/auth/dto/register/register.dto.ts
+import { IsEmail, IsOptional, IsString, MinLength } from 'class-validator';
+
 export class RegisterDto {
+  @IsString()
   nombre: string;
+
+  @IsEmail()
   email: string;
+
+  @IsString()
+  @MinLength(6)
   password: string;
-  telefono: string;
-  rol?: string; // Si quieres usar enum, cámbialo, pero debe llamarse igual en todos lados
+
+  @IsOptional()
+  @IsString()
+  telefono?: string;
+
+  @IsOptional()
+  @IsString()
+  rol?: string;
 }
