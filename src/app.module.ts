@@ -1,12 +1,19 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
-// Importa TODOS los módulos propios aquí:
+// Módulos
 import { AuthModule } from './auth/auth.module';
 import { ClientesModule } from './clientes/clientes.module';
-import { UsersModule } from './users/users.module'; // <-- Importa tu módulo de usuarios aquí
-import { ReportsModule } from './reports.module';
+import { UsersModule } from './users/users.module'; 
+import { ReportsModule } from './reports.module'; 
 import { AlertModule } from './alert.module';
+
+// Entidades
+import { User } from './users/user.entity';
+import { Alert } from './alert.entity'; 
+import { Lente } from './lentes/lente.entity';
+import { Contacto } from './Contacto/contacto.entity';
+import { ExportHistory } from './export-history.entity'; // <--- 1. IMPÓRTALO AQUÍ
 
 @Module({
   imports: [
@@ -16,13 +23,16 @@ import { AlertModule } from './alert.module';
       port: 5432,
       username: 'postgres',
       password: '123456',
-      database: 'auth_db',
-      autoLoadEntities: true,   // detecta entidades automáticamente
-      synchronize: true,        // ¡NO usar en producción!
+      database: 'alertas_app_v2',
+      
+      // 2. AGRÉGALO A ESTA LISTA OBLIGATORIAMENTE
+      entities: [User, Alert, Lente, Contacto, ExportHistory], 
+      
+      synchronize: false, 
     }),
     AuthModule,
     ClientesModule,
-    UsersModule,   // <-- ¡Debe estar aquí!
+    UsersModule,
     ReportsModule,
     AlertModule,
   ],

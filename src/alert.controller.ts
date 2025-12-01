@@ -1,20 +1,20 @@
-// src/alert.controller.ts
-import { Controller, Post, Get, Body } from '@nestjs/common';
+import { Controller, Post, Get, Body, UseGuards, Request } from '@nestjs/common';
 import { AlertService } from './alert.service';
 import { CreateAlertDto } from './auth/dto/create-alert.dto';
+import { JwtAuthGuard } from './auth/jwt-auth/jwt-auth.guard'; 
 
 @Controller('alert')
-export class AlertController {
+@UseGuards(JwtAuthGuard) 
+export class AlertController { // <--- AQUI ESTABA EL ERROR (Decía UsersController)
   constructor(private readonly alertService: AlertService) {}
 
   @Post()
-  async create(@Body() createAlertDto: CreateAlertDto) {
-    return this.alertService.createAndNotify(createAlertDto);
+  async create(@Request() req, @Body() createAlertDto: CreateAlertDto) {
+    return this.alertService.createAndNotify(req.user, createAlertDto);
   }
 
-  // ---> AGREGA ESTE ENDPOINT <---
   @Get()
-  async findAll() {
-    return this.alertService.findAll(); // <-- Esto debe devolver todas las alertas
+  async findAll(@Request() req) {
+    return this.alertService.findAll(req.user); 
   }
 }

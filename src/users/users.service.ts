@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { User } from './user.entity'; // Verifica que la ruta a tu entidad sea correcta
+import { User } from './user.entity';
 
 @Injectable()
 export class UsersService {
@@ -10,48 +10,46 @@ export class UsersService {
     private usersRepository: Repository<User>,
   ) {}
 
-  // Buscar todos
-  findAll() {
-    return this.usersRepository.find({ order: { id: 'ASC' } });
+  async findAll(): Promise<User[]> {
+    return this.usersRepository.find();
   }
 
-  // Buscar uno por email (para auth)
-  findOneByEmail(email: string) {
-    return this.usersRepository.findOne({ where: { email } });
-  }
-
-  // Buscar uno por ID
-  async findOne(id: number) {
+  async findOne(id: number): Promise<User> {
     const user = await this.usersRepository.findOne({ where: { id } });
-    if (!user) throw new NotFoundException(`Usuario #${id} no encontrado`);
+    if (!user) {
+      throw new NotFoundException(`Usuario con ID ${id} no encontrado`);
+    }
     return user;
   }
 
-  // --- LÓGICA QUE FALTABA ---
-
-  // Crear
-  async create(data: any) {
-    // Si no mandan password, ponemos uno por defecto '123456'
-    // OJO: Aquí deberías encriptarla con bcrypt si estás usando Auth, 
-    // pero para que te funcione YA, lo guardamos directo.
-    const newUser = this.usersRepository.create({
-      ...data,
-      password: data.password || '$2b$10$tuHashGenericoO123456', 
-      createdAt: new Date(),
-    });
-    return this.usersRepository.save(newUser);
+  // CORREGIDO: Ahora devuelve User | null (para evitar el error rojo)
+  async findOneByEmail(email: string): Promise<User | null> {
+    return this.usersRepository.findOne({ where: { email } });
   }
 
-  // Actualizar
-  async update(id: number, data: any) {
-    const user = await this.findOne(id);
-    this.usersRepository.merge(user, data);
-    return this.usersRepository.save(user);
+  // CORREGIDO: Quitamos el tipo estricto de retorno para evitar conflictos de Array
+  async create(userData: any) {
+    const newUser = this.usersRepository.create(userData);
+    return await this.usersRepository.save(newUser);
   }
 
-  // Eliminar
-  async remove(id: number) {
-    const user = await this.findOne(id);
-    return this.usersRepository.remove(user);
+  async updateProfile(id: number, data: any) {
+    const datosAActualizar = {
+      nombre: data.nombre,
+      telefono: data.telefono,
+      email_recuperacion: data.email_recuperacion 
+    };
+
+    // Limpieza de datos vacíos
+    Object.keys(datosAActualizar).forEach(key => 
+      (datosAActualizar[key] === undefined || datosAActualizar[key] === null) && delete datosAActualizar[key]
+    );
+
+    await this.usersRepository.update(id, datosAActualizar);
+    return this.findOne(id);
+  }
+
+  async remove(id: number): Promise<void> {
+    await this.usersRepository.delete(id);
   }
 }

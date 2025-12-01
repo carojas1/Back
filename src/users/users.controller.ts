@@ -1,44 +1,33 @@
-import { Controller, Get, Post, Body, Put, Param, Delete, Req, UseGuards } from '@nestjs/common';
-import { JwtAuthGuard } from '../auth/jwt-auth/jwt-auth.guard';
+import { Controller, Get, Post, Body, Param, Delete, Put, UseGuards, Request } from '@nestjs/common';
 import { UsersService } from './users.service';
+import { JwtAuthGuard } from '../auth/jwt-auth/jwt-auth.guard';
 
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
-  // 1. OBTENER TODOS (Solo Admin) - YA LO TENÍAS
-  @UseGuards(JwtAuthGuard)
   @Get()
-  async getAllUsers(@Req() req) {
-    // Si quieres quitar la restricción de admin temporalmente para probar, comenta el if
-    /* if (req.user.rol !== 'admin') {
-      return { error: 'No autorizado' };
-    } */
+  findAll() {
     return this.usersService.findAll();
   }
 
-  // 2. PERFIL (YA LO TENÍAS)
   @UseGuards(JwtAuthGuard)
   @Get('me')
-  getProfile(@Req() req) {
-    return req.user;
+  getProfile(@Request() req) {
+    return this.usersService.findOne(req.user.id);
   }
 
-  // --- ESTO ES LO QUE TE FALTABA ---
-
-  // 3. CREAR USUARIO
-  @Post()
-  create(@Body() body: any) {
-    return this.usersService.create(body);
+  @Get(':id')
+  findOne(@Param('id') id: string) {
+    return this.usersService.findOne(+id);
   }
 
-  // 4. EDITAR USUARIO
   @Put(':id')
-  update(@Param('id') id: string, @Body() body: any) {
-    return this.usersService.update(+id, body);
+  async update(@Param('id') id: string, @Body() body: any) {
+    // CORREGIDO: Llamamos a updateProfile, no a update
+    return this.usersService.updateProfile(+id, body);
   }
 
-  // 5. ELIMINAR USUARIO
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.usersService.remove(+id);
