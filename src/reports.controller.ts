@@ -1,10 +1,18 @@
-import { Body, Controller, Get, Post, Query, UseGuards, Request } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  Query,
+  UseGuards,
+  Request,
+} from '@nestjs/common';
 import { ReportsService } from './reports.service';
 import { RangeDto } from './auth/dto/range.dto'; // <--- CORREGIDO: ./
 import { JwtAuthGuard } from './auth/jwt-auth/jwt-auth.guard'; // <--- CORREGIDO: ./
 
 @Controller('reports')
-@UseGuards(JwtAuthGuard) 
+@UseGuards(JwtAuthGuard)
 export class ReportsController {
   constructor(private readonly svc: ReportsService) {}
 
@@ -24,7 +32,10 @@ export class ReportsController {
   }
 
   @Post('export')
-  async exportar(@Request() req, @Body() body: { email: string; tab: 'diario'|'semanal'|'mensual' }) {
+  async exportar(
+    @Request() req,
+    @Body() body: { email: string; tab: 'diario' | 'semanal' | 'mensual' },
+  ) {
     return this.svc.sendReportToEmail(req.user, body.email, body.tab);
   }
 }

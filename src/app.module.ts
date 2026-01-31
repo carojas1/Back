@@ -24,7 +24,7 @@ import { AlertModule } from './alert.module';
     // 🔥 Conexión a Neon
     TypeOrmModule.forRoot({
       type: 'postgres',
-      url: process.env.DATABASE_URL,   // viene del .env o variables de Render
+      url: process.env.DATABASE_URL, // viene del .env o variables de Render
 
       // 👇 Registramos explícitamente TODAS las entidades
       entities: [User, Alert, Lente, Contacto, ExportHistory],
@@ -42,4 +42,4 @@ import { AlertModule } from './alert.module';
     AlertModule,
   ],
 })
-export class AppModule { }
+export class AppModule {}

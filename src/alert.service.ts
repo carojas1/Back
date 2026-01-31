@@ -1,9 +1,9 @@
 // src/alert.service.ts
-import { Injectable } from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Alert } from './alert.entity';
-import { User } from './users/user.entity'; // <--- IMPORTANTE: Importamos al Usuario
+import { User } from './users/user.entity';
 import { CreateAlertDto } from './auth/dto/create-alert.dto';
 
 @Injectable()
@@ -11,32 +11,42 @@ export class AlertService {
   constructor(
     @InjectRepository(Alert)
     private readonly alertRepository: Repository<Alert>,
-  ) {}
+  ) { }
 
-  // 1. CREAR ALERTA (Asignada al usuario específico)
-  async createAndNotify(user: User, createAlertDto: CreateAlertDto): Promise<Alert> {
-    const alert = this.alertRepository.create({
-      ...createAlertDto,
-      created_at: new Date(),
-      usuario: user, // <--- AQUÍ ESTÁ LA CLAVE: Vinculamos la alerta al usuario que llega
-    });
-    return await this.alertRepository.save(alert);
+  // ==== CREAR ALERTA - Soporta frontend y ESP32 ====
+  async create(user: User | { id: number }, dto: CreateAlertDto): Promise<Alert> {
+    try {
+      // Soportar ambos formatos: frontend (type/message) y ESP32 (tipo_alerta/mensaje)
+      const tipoAlerta = dto.type || dto.tipo_alerta || 'desconocido';
+      const mensaje = dto.message || dto.mensaje || 'Sin mensaje';
+
+      const alert = this.alertRepository.create({
+        usuarioId: user.id,
+        tipoAlerta: tipoAlerta,
+        mensaje: mensaje,
+        nivelFatiga: dto.nivelFatiga ?? 5,
+      });
+
+      console.log('✅ Creando alerta:', alert);
+      return await this.alertRepository.save(alert);
+    } catch (err) {
+      console.error('❌ Error creando alerta:', err);
+      throw new InternalServerErrorException('Error guardando alerta');
+    }
   }
 
-  // 2. BUSCAR ALERTAS (Solo las del usuario que pregunta)
-  async findAll(user: User): Promise<Alert[]> {
-    // Si quieres que Andrés (admin) vea TODO y los demás solo lo suyo:
-    if (user.email === 'andres2007benavides@gmail.com' || user.rol === 'admin') {
-       return this.alertRepository.find({
-         order: { created_at: 'DESC' },
-         relations: ['usuario'] // Para ver de quién es cada alerta
-       });
-    }
-
-    // Para el resto de mortales: Solo ven sus propias alertas
+  // ==== TODAS LAS ALERTAS (admin) ====
+  async findAll(): Promise<Alert[]> {
     return this.alertRepository.find({
-      where: { usuario: { id: user.id } }, // <--- FILTRO DE SEGURIDAD
-      order: { created_at: 'DESC' },
+      order: { id: 'DESC' },
+    });
+  }
+
+  // ==== ALERTAS POR USUARIO (Historial) ====
+  async findByUser(userId: number): Promise<Alert[]> {
+    return this.alertRepository.find({
+      where: { usuarioId: userId },
+      order: { id: 'DESC' },
     });
   }
 }

@@ -4,9 +4,9 @@ import { Repository, Between } from 'typeorm';
 import * as nodemailer from 'nodemailer';
 
 // CORRECCIÓN DE RUTAS: Usamos ./ porque estamos en la raiz src
-import { Alert } from './alert.entity'; 
-import { ExportHistory } from './export-history.entity'; 
-import { User } from './users/user.entity'; 
+import { Alert } from './alert.entity';
+import { ExportHistory } from './export-history.entity';
+import { User } from './users/user.entity';
 
 type TabKey = 'diario' | 'semanal' | 'mensual';
 
@@ -18,10 +18,10 @@ export class ReportsService {
     @InjectRepository(Alert)
     private readonly alertRepository: Repository<Alert>,
     @InjectRepository(ExportHistory)
-    private readonly exportHistoryRepository: Repository<ExportHistory>
+    private readonly exportHistoryRepository: Repository<ExportHistory>,
   ) {
     const user = process.env.SMTP_USER || 'alertavision706@gmail.com';
-    const pass = process.env.SMTP_PASS || 'whtp jyvo ylae fjga'; 
+    const pass = process.env.SMTP_PASS || 'whtp jyvo ylae fjga';
     this.transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: { user, pass },
@@ -32,12 +32,12 @@ export class ReportsService {
 
   async getDaily(fromISO: string, toISO: string, userId: number) {
     const from = new Date(fromISO);
-    const to   = new Date(toISO);
+    const to = new Date(toISO);
 
     const alerts = await this.alertRepository.find({
       where: {
         created_at: Between(from, to),
-        usuario: { id: userId } 
+        usuario: { id: userId },
       },
       order: { created_at: 'ASC' },
     });
@@ -53,23 +53,28 @@ export class ReportsService {
 
   async getWeekly(fromISO: string, toISO: string, userId: number) {
     const from = new Date(fromISO);
-    const to   = new Date(toISO);
+    const to = new Date(toISO);
 
     const alerts = await this.alertRepository.find({
       where: {
         created_at: Between(from, to),
-        usuario: { id: userId }
+        usuario: { id: userId },
       },
       order: { created_at: 'ASC' },
     });
 
     const MS_DAY = 24 * 60 * 60 * 1000;
-    const totalDays = Math.max(1, Math.ceil((to.getTime() - from.getTime()) / MS_DAY));
+    const totalDays = Math.max(
+      1,
+      Math.ceil((to.getTime() - from.getTime()) / MS_DAY),
+    );
     const weeks = Math.ceil(totalDays / 7);
     const buckets = Array(weeks).fill(0);
 
     for (const a of alerts) {
-      const idx = Math.floor((new Date(a.created_at).getTime() - from.getTime()) / (7 * MS_DAY));
+      const idx = Math.floor(
+        (new Date(a.created_at).getTime() - from.getTime()) / (7 * MS_DAY),
+      );
       if (idx >= 0 && idx < buckets.length) buckets[idx] += 1;
     }
 
@@ -79,16 +84,18 @@ export class ReportsService {
 
   async getMonthly(fromISO: string, toISO: string, userId: number) {
     const from = new Date(fromISO);
-    const to   = new Date(toISO);
+    const to = new Date(toISO);
 
     const alerts = await this.alertRepository.find({
       where: {
         created_at: Between(from, to),
-        usuario: { id: userId }
+        usuario: { id: userId },
       },
     });
 
-    let light = 0, deep = 0, awake = 0;
+    let light = 0,
+      deep = 0,
+      awake = 0;
     for (let i = 0; i < alerts.length; i++) {
       light++;
       if (i % 3 === 0) deep++;
@@ -111,7 +118,15 @@ export class ReportsService {
     return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0);
   }
   private endOfDay(d: Date) {
-    return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999);
+    return new Date(
+      d.getFullYear(),
+      d.getMonth(),
+      d.getDate(),
+      23,
+      59,
+      59,
+      999,
+    );
   }
   private lastWeekRange(ref: Date) {
     const end = this.endOfDay(new Date(ref));
@@ -127,7 +142,8 @@ export class ReportsService {
         const [mb, yb] = b.split('/').map(Number);
         return ya !== yb ? ya - yb : ma - mb;
       }
-      const da = Date.parse(a), db = Date.parse(b);
+      const da = Date.parse(a),
+        db = Date.parse(b);
       if (isNaN(da) || isNaN(db)) return 0;
       return da - db;
     });
@@ -162,9 +178,9 @@ export class ReportsService {
     }
 
     const alerts = await this.alertRepository.find({
-      where: { 
+      where: {
         created_at: Between(startDate, endDate),
-        usuario: { id: user.id } 
+        usuario: { id: user.id },
       },
       order: { created_at: 'ASC' },
     });
@@ -184,17 +200,20 @@ export class ReportsService {
     let diaCritico = '';
     let max = 0;
     for (const [k, v] of Object.entries(contador)) {
-      if (v > max) { max = v; diaCritico = k; }
+      if (v > max) {
+        max = v;
+        diaCritico = k;
+      }
     }
 
     let diffSemana = '+0';
     try {
       const { start: prevStart, end: prevEnd } = this.lastWeekRange(startDate);
-      const prevCount = await this.alertRepository.count({ 
-        where: { 
+      const prevCount = await this.alertRepository.count({
+        where: {
           created_at: Between(prevStart, prevEnd),
-          usuario: { id: user.id } 
-        } 
+          usuario: { id: user.id },
+        },
       });
       const delta = totalAlertas - prevCount;
       diffSemana = (delta >= 0 ? '+' : '') + delta.toString();
@@ -213,7 +232,8 @@ export class ReportsService {
     } else if (totalAlertas < 3) {
       mensajePersonalizado = 'Nivel aceptable. Mantén tus buenos hábitos.';
     } else {
-      mensajePersonalizado = 'Precaución: se detectaron varios episodios. Descansa.';
+      mensajePersonalizado =
+        'Precaución: se detectaron varios episodios. Descansa.';
     }
 
     await this.exportHistoryRepository.save({ email });
@@ -229,7 +249,7 @@ export class ReportsService {
       <div style="margin-top:17px;">
         <div style="font-weight:600;margin-bottom:7px;color:#5a4228;">🕑 Últimas exportaciones</div>
         <ul style="padding-left:17px;margin:0;">
-          ${exportHistory.map(e => `<li style="margin-bottom:3px;">${new Date(e.created_at).toLocaleString()}</li>`).join('')}
+          ${exportHistory.map((e) => `<li style="margin-bottom:3px;">${new Date(e.created_at).toLocaleString()}</li>`).join('')}
         </ul>
       </div>`;
     }
@@ -266,7 +286,8 @@ export class ReportsService {
     `;
 
     const mailOptions = {
-      from: process.env.SMTP_FROM || '"Alerta Visión" <alertavision706@gmail.com>',
+      from:
+        process.env.SMTP_FROM || '"Alerta Visión" <alertavision706@gmail.com>',
       to: email,
       subject: `Reporte ${tab} - ${user.nombre}`,
       html,

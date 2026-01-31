@@ -1,31 +1,48 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
-// CORRECCIÓN 1: Usamos './' porque este archivo está en src/, no dentro de una carpeta
-import { User } from './users/user.entity'; 
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  JoinColumn,
+  CreateDateColumn,
+} from 'typeorm';
+import { User } from './users/user.entity';
 
 @Entity('alertas')
 export class Alert {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ name: 'tipo_alerta' })
-  tipo: string;
+  // columna tipo_alerta
+  @Column({ name: 'tipo_alerta', type: 'varchar', length: 50 })
+  tipoAlerta: string;
 
-  @Column({ name: 'nivel_fatiga' })
-  nivel: number;
+  // columna nivel_fatiga
+  @Column({ name: 'nivel_fatiga', type: 'int', nullable: true })
+  nivelFatiga: number | null;
 
-  @Column({ nullable: true })
-  mensaje: string;
+  // columna mensaje
+  @Column({ name: 'mensaje', type: 'varchar', length: 255, nullable: true })
+  mensaje: string | null;
 
-  // CORRECCIÓN 2: Renombrado a 'created_at' para que tus servicios NO fallen.
-  // En la base de datos se llamará 'fecha', pero en el código será 'created_at'.
-  @Column({ name: 'fecha', type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
-  created_at: Date;
+  // columna fecha
+  @CreateDateColumn({ name: 'fecha', type: 'timestamp' })
+  fecha: Date;
 
-  // CORRECCIÓN 3: Agregamos 'status' porque vi en tus errores que podría hacer falta
-  @Column({ default: 'pendiente', nullable: true }) 
-  status: string;
+  // FK usuario_id
+  @Column({ name: 'usuario_id', type: 'int' })
+  usuarioId: number;
 
   @ManyToOne(() => User, (user) => user.alertas, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'usuario_id' }) 
+  @JoinColumn({ name: 'usuario_id' })
   usuario: User;
+
+  // getters para que Angular pueda usar createdAt o created_at
+  get createdAt() {
+    return this.fecha;
+  }
+
+  get created_at() {
+    return this.fecha;
+  }
 }

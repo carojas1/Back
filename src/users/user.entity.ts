@@ -4,13 +4,13 @@ import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
 // Subimos un nivel (..) para salir de la carpeta 'users' y buscar las otras carpetas
 
 // 1. Importar Alert (Asumiendo que está en src/alert/alert.entity.ts)
-import { Alert } from '../alert.entity'; 
+import { Alert } from '../alert.entity';
 
 // 2. Importar Lente (Asumiendo que está en src/lentes/lente.entity.ts)
-import { Lente } from '../lentes/lente.entity'; 
+import { Lente } from '../lentes/lente.entity';
 
 // 3. Importar Contacto (OJO: Carpeta con mayúscula 'Contacto' como pediste)
-import { Contacto } from '../Contacto/contacto.entity'; 
+import { Contacto } from '../Contacto/contacto.entity';
 
 @Entity('usuarios') // Se conecta a la tabla 'usuarios' de la base de datos
 export class User {

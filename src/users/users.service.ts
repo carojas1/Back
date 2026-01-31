@@ -37,12 +37,15 @@ export class UsersService {
     const datosAActualizar = {
       nombre: data.nombre,
       telefono: data.telefono,
-      email_recuperacion: data.email_recuperacion 
+      email_recuperacion: data.email_recuperacion,
     };
 
     // Limpieza de datos vacíos
-    Object.keys(datosAActualizar).forEach(key => 
-      (datosAActualizar[key] === undefined || datosAActualizar[key] === null) && delete datosAActualizar[key]
+    Object.keys(datosAActualizar).forEach(
+      (key) =>
+        (datosAActualizar[key] === undefined ||
+          datosAActualizar[key] === null) &&
+        delete datosAActualizar[key],
     );
 
     await this.usersRepository.update(id, datosAActualizar);
