@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsInt, Min, Max } from 'class-validator';
+import { IsString, IsOptional, IsInt, Min, Max, IsEmail } from 'class-validator';
 
 export class CreateAlertDto {
   // Frontend format
@@ -22,6 +22,11 @@ export class CreateAlertDto {
   @IsInt()
   @IsOptional()
   usuarioId?: number;
+
+  // Email para buscar usuario (ESP32)
+  @IsEmail()
+  @IsOptional()
+  email?: string;
 
   @IsString()
   @IsOptional()

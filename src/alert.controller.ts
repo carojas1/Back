@@ -23,13 +23,11 @@ export class AlertController {
   }
 
   // ✅ Endpoint PÚBLICO para el ESP32 (sin JWT)
-  // El ESP32 envía usuarioId en el body
+  // El ESP32 puede enviar email o usuarioId
   @Post('esp32')
   async createFromESP32(@Body() createAlertDto: CreateAlertDto) {
-    // El ESP32 envía { usuarioId, nivelFatiga, tipo_alerta, mensaje }
-    const userId = createAlertDto.usuarioId ?? 1; // Default a usuario 1 si no viene
-    const user = { id: userId };
-    return this.alertService.create(user, createAlertDto);
+    console.log('📥 Alerta recibida del ESP32:', createAlertDto);
+    return this.alertService.createFromESP32(createAlertDto);
   }
 
   // Historial del usuario logueado
