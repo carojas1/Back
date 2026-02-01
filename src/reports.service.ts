@@ -174,8 +174,25 @@ export class ReportsService {
 
   // --- EXPORTAR ---
 
+  // Normaliza el tab a español (acepta inglés o español, mayúsculas o minúsculas)
+  private normalizeTab(tab: string): TabKey | null {
+    const tabLower = (tab || '').toLowerCase().trim();
+
+    // Mapeo inglés -> español
+    const mapping: Record<string, TabKey> = {
+      'daily': 'diario',
+      'diario': 'diario',
+      'weekly': 'semanal',
+      'semanal': 'semanal',
+      'monthly': 'mensual',
+      'mensual': 'mensual',
+    };
+
+    return mapping[tabLower] || null;
+  }
+
   private isValidTab(tab: string): tab is TabKey {
-    return tab === 'diario' || tab === 'semanal' || tab === 'mensual';
+    return this.normalizeTab(tab) !== null;
   }
 
   private startOfDay(d: Date) {
@@ -225,10 +242,14 @@ export class ReportsService {
       throw new Error('Email no válido');
     }
 
-    if (!this.isValidTab(tab)) {
+    // Normalizar tab (acepta Daily/Weekly/Monthly o diario/semanal/mensual)
+    const normalizedTab = this.normalizeTab(tab);
+    if (!normalizedTab) {
       console.error('❌ Export error: Tab inválido', tab);
       throw new Error('Tipo de reporte no válido');
     }
+
+    console.log('📧 Tab normalizado:', tab, '->', normalizedTab);
 
     const userName = user.nombre || 'Usuario';
 
@@ -239,12 +260,12 @@ export class ReportsService {
       let periodoLabel = '';
       let agrupador: 'day' | 'hour' | 'month' = 'day';
 
-      if (tab === 'diario') {
+      if (normalizedTab === 'diario') {
         startDate = this.startOfDay(now);
         endDate = this.endOfDay(now);
         periodoLabel = `Día: ${startDate.toLocaleDateString()}`;
         agrupador = 'hour';
-      } else if (tab === 'semanal') {
+      } else if (normalizedTab === 'semanal') {
         const dayOfWeek = now.getDay();
         startDate = this.startOfDay(new Date(now));
         startDate.setDate(now.getDate() - dayOfWeek);
@@ -258,7 +279,7 @@ export class ReportsService {
         agrupador = 'day';
       }
 
-      console.log('📧 Generando reporte:', { userId: user.id, email, tab, startDate, endDate });
+      console.log('📧 Generando reporte:', { userId: user.id, email, tab: normalizedTab, startDate, endDate });
 
       const alerts = await this.alertRepository.find({
         where: {
@@ -352,7 +373,7 @@ export class ReportsService {
       const html = `
         <div style="max-width:540px;margin:20px auto;font-family:Arial,sans-serif;background:#fcf8f5;border-radius:10px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,0.1);">
           <div style="background:#007bff;color:#fff;padding:20px;text-align:center;">
-            <h2 style="margin:0;">Reporte de Fatiga (${tab})</h2>
+            <h2 style="margin:0;">Reporte de Fatiga (${normalizedTab})</h2>
             <p style="margin:5px 0 0 0;">Hola, ${userName}</p>
           </div>
           <div style="padding:20px;">
@@ -384,18 +405,28 @@ export class ReportsService {
         from:
           process.env.SMTP_FROM || '"Alerta Visión" <alertavision706@gmail.com>',
         to: email,
-        subject: `Reporte ${tab} - ${userName}`,
+        subject: `Reporte ${normalizedTab} - ${userName}`,
         html,
       };
 
       console.log('📧 Enviando email a:', email);
-      await this.transporter.sendMail(mailOptions);
-      console.log('✅ Email enviado exitosamente');
 
-      return { message: '¡Reporte enviado correctamente!' };
+      try {
+        await this.transporter.sendMail(mailOptions);
+        console.log('✅ Email enviado exitosamente');
+        return { message: '¡Reporte enviado correctamente!', success: true };
+      } catch (emailError) {
+        // Log el error pero NO fallar - devolver éxito parcial
+        console.error('⚠️ Error enviando email (SMTP):', emailError.message);
+        return {
+          message: 'Reporte generado. El envío de email falló - verifica la configuración SMTP.',
+          success: false,
+          emailError: emailError.message
+        };
+      }
     } catch (error) {
       console.error('❌ Error en sendReportToEmail:', error);
-      throw new Error(`Error enviando reporte: ${error.message || 'Error desconocido'}`);
+      throw new Error(`Error generando reporte: ${error.message || 'Error desconocido'}`);
     }
   }
 }
