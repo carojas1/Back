@@ -36,15 +36,15 @@ export class ReportsService {
 
     const alerts = await this.alertRepository.find({
       where: {
-        created_at: Between(from, to),
-        usuario: { id: userId },
+        fecha: Between(from, to),
+        usuarioId: userId,
       },
-      order: { created_at: 'ASC' },
+      order: { fecha: 'ASC' },
     });
 
     const map = new Map<string, number>();
     for (const a of alerts) {
-      const d = new Date(a.created_at);
+      const d = new Date(a.fecha);
       const label = d.toLocaleDateString();
       map.set(label, (map.get(label) || 0) + 1);
     }
@@ -57,10 +57,10 @@ export class ReportsService {
 
     const alerts = await this.alertRepository.find({
       where: {
-        created_at: Between(from, to),
-        usuario: { id: userId },
+        fecha: Between(from, to),
+        usuarioId: userId,
       },
-      order: { created_at: 'ASC' },
+      order: { fecha: 'ASC' },
     });
 
     const MS_DAY = 24 * 60 * 60 * 1000;
@@ -73,7 +73,7 @@ export class ReportsService {
 
     for (const a of alerts) {
       const idx = Math.floor(
-        (new Date(a.created_at).getTime() - from.getTime()) / (7 * MS_DAY),
+        (new Date(a.fecha).getTime() - from.getTime()) / (7 * MS_DAY),
       );
       if (idx >= 0 && idx < buckets.length) buckets[idx] += 1;
     }
@@ -88,8 +88,8 @@ export class ReportsService {
 
     const alerts = await this.alertRepository.find({
       where: {
-        created_at: Between(from, to),
-        usuario: { id: userId },
+        fecha: Between(from, to),
+        usuarioId: userId,
       },
     });
 
@@ -179,17 +179,17 @@ export class ReportsService {
 
     const alerts = await this.alertRepository.find({
       where: {
-        created_at: Between(startDate, endDate),
-        usuario: { id: user.id },
+        fecha: Between(startDate, endDate),
+        usuarioId: user.id,
       },
-      order: { created_at: 'ASC' },
+      order: { fecha: 'ASC' },
     });
 
     const totalAlertas = alerts.length;
 
     const contador: Record<string, number> = {};
     for (const alert of alerts) {
-      const date = new Date(alert.created_at);
+      const date = new Date(alert.fecha);
       let key = '';
       if (agrupador === 'hour') key = `${date.getHours()}:00`;
       else if (agrupador === 'day') key = date.toLocaleDateString();
@@ -211,13 +211,13 @@ export class ReportsService {
       const { start: prevStart, end: prevEnd } = this.lastWeekRange(startDate);
       const prevCount = await this.alertRepository.count({
         where: {
-          created_at: Between(prevStart, prevEnd),
-          usuario: { id: user.id },
+          fecha: Between(prevStart, prevEnd),
+          usuarioId: user.id,
         },
       });
       const delta = totalAlertas - prevCount;
       diffSemana = (delta >= 0 ? '+' : '') + delta.toString();
-    } catch {}
+    } catch { }
 
     let grafica = '';
     const dias = this.sortKeys(Object.keys(contador), agrupador);
