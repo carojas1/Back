@@ -35,7 +35,7 @@ import { FirebaseModule } from './firebase/firebase.module';
       // 👇 Registramos explícitamente TODAS las entidades
       entities: [User, Alert, Lente, Contacto, ExportHistory],
 
-      synchronize: true, // ⚠️ ACTIVADO TEMPORALMENTE para crear columna firebaseUid
+      synchronize: false, // ⚠️ DESACTIVADO para producción
       ssl: {
         rejectUnauthorized: false,
       },

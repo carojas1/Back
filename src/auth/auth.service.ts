@@ -86,13 +86,16 @@ export class AuthService {
     firebaseUid: string;
     telefono?: string;
   }): Promise<User> {
+    // 🛡️ REGLA MAESTRA: Si es el correo del jefe, es ADMIN
+    const esAdmin = data.email === 'carojas@sudamericano.edu.ec';
+
     const user = this.userRepository.create({
       email: data.email,
       nombre: data.nombre,
       firebaseUid: data.firebaseUid,
       telefono: data.telefono || '',
-      rol: 'user',
-      password: '', // Sin password local
+      rol: esAdmin ? 'admin' : 'user', // Asignación automática
+      password: '',
     });
     return this.userRepository.save(user);
   }
