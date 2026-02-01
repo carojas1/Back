@@ -3,14 +3,20 @@ import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 
+// ✅ IMPORTAR DESDE ARCHIVO CENTRALIZADO - NUNCA DUPLICAR
+import { JWT_CONFIG, getJwtDebugInfo } from '../config/jwt.config';
+
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor() {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: process.env.JWT_SECRET || 'Antonella123.0',
+      secretOrKey: JWT_CONFIG.secret,  // ✅ Usa config centralizada
     });
+
+    // Log para verificar que el secret es consistente
+    console.log('🔐 JwtStrategy JWT Config:', getJwtDebugInfo());
   }
 
   async validate(payload: any) {
@@ -22,3 +28,4 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     };
   }
 }
+
