@@ -31,8 +31,15 @@ export class ReportsService {
   // --- SERIES ---
 
   async getDaily(fromISO: string, toISO: string, userId: number) {
+    // Crear fecha de inicio a las 00:00:00
     const from = new Date(fromISO);
+    from.setHours(0, 0, 0, 0);
+
+    // Crear fecha de fin a las 23:59:59.999
     const to = new Date(toISO);
+    to.setHours(23, 59, 59, 999);
+
+    console.log('📅 getDaily - Rango:', { from, to, userId });
 
     const alerts = await this.alertRepository.find({
       where: {
@@ -41,6 +48,8 @@ export class ReportsService {
       },
       order: { fecha: 'ASC' },
     });
+
+    console.log('📊 Alertas encontradas:', alerts.length);
 
     const map = new Map<string, number>();
     for (const a of alerts) {
@@ -53,7 +62,12 @@ export class ReportsService {
 
   async getWeekly(fromISO: string, toISO: string, userId: number) {
     const from = new Date(fromISO);
+    from.setHours(0, 0, 0, 0);
+
     const to = new Date(toISO);
+    to.setHours(23, 59, 59, 999);
+
+    console.log('📅 getWeekly - Rango:', { from, to, userId });
 
     const alerts = await this.alertRepository.find({
       where: {
@@ -62,6 +76,8 @@ export class ReportsService {
       },
       order: { fecha: 'ASC' },
     });
+
+    console.log('📊 Alertas semanales encontradas:', alerts.length);
 
     const MS_DAY = 24 * 60 * 60 * 1000;
     const totalDays = Math.max(
@@ -84,7 +100,12 @@ export class ReportsService {
 
   async getMonthly(fromISO: string, toISO: string, userId: number) {
     const from = new Date(fromISO);
+    from.setHours(0, 0, 0, 0);
+
     const to = new Date(toISO);
+    to.setHours(23, 59, 59, 999);
+
+    console.log('📅 getMonthly - Rango:', { from, to, userId });
 
     const alerts = await this.alertRepository.find({
       where: {
@@ -93,18 +114,29 @@ export class ReportsService {
       },
     });
 
-    let light = 0,
-      deep = 0,
-      awake = 0;
-    for (let i = 0; i < alerts.length; i++) {
-      light++;
-      if (i % 3 === 0) deep++;
-      if (i % 5 === 0) awake++;
+    console.log('📊 Alertas mensuales encontradas:', alerts.length);
+
+    // Calcular estadísticas basadas en alertas reales
+    const totalAlertas = alerts.length;
+
+    // Si no hay alertas, devolver valores vacíos
+    if (totalAlertas === 0) {
+      return {
+        labels: ['Sin alertas'],
+        values: [0],
+      };
+    }
+
+    // Agrupar por tipo de alerta o por día
+    const porDia = new Map<string, number>();
+    for (const a of alerts) {
+      const dia = new Date(a.fecha).toLocaleDateString();
+      porDia.set(dia, (porDia.get(dia) || 0) + 1);
     }
 
     return {
-      labels: ['Sueño ligero', 'Sueño profundo', 'Despierto'],
-      values: [light, deep, awake],
+      labels: Array.from(porDia.keys()),
+      values: Array.from(porDia.values()),
     };
   }
 
