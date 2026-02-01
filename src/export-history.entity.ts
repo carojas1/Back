@@ -10,7 +10,7 @@ export class ExportHistory {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column()
+  @Column({ nullable: true })
   email: string;
 
   @CreateDateColumn()
