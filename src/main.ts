@@ -29,6 +29,12 @@ async function bootstrap() {
   // Validación global
   app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
 
+  // Prefijo global /api
+  app.setGlobalPrefix('api');
+
+  // Prefix Global (/api)
+  app.setGlobalPrefix('api');
+
   // Puerto dinámico para despliegue (Render, Railway, Vercel)
   const port = process.env.PORT || 3000;
 

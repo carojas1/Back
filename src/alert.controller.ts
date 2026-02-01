@@ -34,6 +34,7 @@ export class AlertController {
   @Get()
   @UseGuards(JwtAuthGuard)
   async findMine(@Request() req) {
+    console.log('📥 GET /alerts - Usuario desde JWT:', req.user);
     return this.alertService.findByUser(req.user.id);
   }
 }

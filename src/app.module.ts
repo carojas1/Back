@@ -36,9 +36,7 @@ import { FirebaseModule } from './firebase/firebase.module';
       entities: [User, Alert, Lente, Contacto, ExportHistory],
 
       synchronize: true, // ⚠️ RE-ACTIVADO para crear tabla usuarios
-      ssl: {
-        rejectUnauthorized: false,
-      },
+      ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false,
     }),
 
     AuthModule,

@@ -33,7 +33,7 @@ export class LentesService {
             bateria: 100,
             alarmaActiva: false,
             shouldSilence: false,
-            ultimaActualizacion: new Date(),
+            ultimaActualizacion: new Date(0), // 1970 - Offline por defecto
         };
     }
 

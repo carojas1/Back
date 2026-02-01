@@ -111,6 +111,28 @@ export class AuthService {
     };
   }
 
+  // Genera token JWT para un usuario ya validado (ej. por Firebase)
+  async generateBackendToken(user: any) {
+    const payload = {
+      id: user.id,
+      email: user.email,
+      nombre: user.nombre,
+      rol: user.rol,
+      telefono: user.telefono,
+    };
+
+    return {
+      access_token: this.jwtService.sign(payload, { expiresIn: '7d' }),
+      user: {
+        id: user.id,
+        nombre: user.nombre,
+        email: user.email,
+        rol: user.rol,
+        telefono: user.telefono,
+      },
+    };
+  }
+
   // ==========================================
   // NUEVOS MÉTODOS PARA FIREBASE
   // ==========================================

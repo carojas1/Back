@@ -14,7 +14,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth/jwt-auth.guard';
 
 @Controller('users')
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(private readonly usersService: UsersService) { }
 
   @Get()
   findAll() {
@@ -25,6 +25,14 @@ export class UsersController {
   @Get('me')
   getProfile(@Request() req) {
     return this.usersService.findOne(req.user.id);
+  }
+
+  // ✅ Actualizar MI perfil (usa ID del JWT)
+  @UseGuards(JwtAuthGuard)
+  @Put('me')
+  updateMyProfile(@Request() req, @Body() body: any) {
+    console.log('📝 Actualizando perfil de usuario ID:', req.user.id);
+    return this.usersService.updateProfile(req.user.id, body);
   }
 
   @Get(':id')
