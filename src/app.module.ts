@@ -16,6 +16,10 @@ import { UsersModule } from './users/users.module';
 import { ReportsModule } from './reports.module';
 import { AlertModule } from './alert.module';
 
+// Lentes (nuevo)
+import { LentesController } from './lentes.controller';
+import { LentesService } from './lentes.service';
+
 @Module({
   imports: [
     // Carga .env global
@@ -41,5 +45,8 @@ import { AlertModule } from './alert.module';
     ReportsModule,
     AlertModule,
   ],
+  controllers: [LentesController],
+  providers: [LentesService],
 })
-export class AppModule {}
+export class AppModule { }
+

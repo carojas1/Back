@@ -31,11 +31,10 @@ export class ReportsService {
   // --- SERIES ---
 
   async getDaily(fromISO: string, toISO: string, userId: number) {
-    // Crear fecha de inicio a las 00:00:00
+    // Usar fecha de hoy
     const from = new Date(fromISO);
     from.setHours(0, 0, 0, 0);
 
-    // Crear fecha de fin a las 23:59:59.999
     const to = new Date(toISO);
     to.setHours(23, 59, 59, 999);
 
@@ -49,15 +48,31 @@ export class ReportsService {
       order: { fecha: 'ASC' },
     });
 
-    console.log('📊 Alertas encontradas:', alerts.length);
+    console.log('📊 Alertas diarias encontradas:', alerts.length);
 
-    const map = new Map<string, number>();
-    for (const a of alerts) {
-      const d = new Date(a.fecha);
-      const label = d.toLocaleDateString();
-      map.set(label, (map.get(label) || 0) + 1);
+    // Agrupar por HORA del día (0-23)
+    const hourMap = new Map<number, number>();
+
+    // Inicializar todas las horas en 0
+    for (let h = 0; h < 24; h++) {
+      hourMap.set(h, 0);
     }
-    return { labels: Array.from(map.keys()), values: Array.from(map.values()) };
+
+    for (const a of alerts) {
+      const hora = new Date(a.fecha).getHours();
+      hourMap.set(hora, (hourMap.get(hora) || 0) + 1);
+    }
+
+    // Generar labels como "00:00", "01:00", etc.
+    const labels: string[] = [];
+    const values: number[] = [];
+
+    for (let h = 0; h < 24; h++) {
+      labels.push(`${h.toString().padStart(2, '0')}:00`);
+      values.push(hourMap.get(h) || 0);
+    }
+
+    return { labels, values };
   }
 
   async getWeekly(fromISO: string, toISO: string, userId: number) {
@@ -79,23 +94,32 @@ export class ReportsService {
 
     console.log('📊 Alertas semanales encontradas:', alerts.length);
 
-    const MS_DAY = 24 * 60 * 60 * 1000;
-    const totalDays = Math.max(
-      1,
-      Math.ceil((to.getTime() - from.getTime()) / MS_DAY),
-    );
-    const weeks = Math.ceil(totalDays / 7);
-    const buckets = Array(weeks).fill(0);
+    // Nombres de días en español
+    const diasSemana = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 
-    for (const a of alerts) {
-      const idx = Math.floor(
-        (new Date(a.fecha).getTime() - from.getTime()) / (7 * MS_DAY),
-      );
-      if (idx >= 0 && idx < buckets.length) buckets[idx] += 1;
+    // Inicializar contador por día de la semana
+    const dayMap = new Map<number, number>();
+    for (let d = 0; d < 7; d++) {
+      dayMap.set(d, 0);
     }
 
-    const labels = buckets.map((_, i) => `Sem ${i + 1}`);
-    return { labels, values: buckets };
+    for (const a of alerts) {
+      const dia = new Date(a.fecha).getDay(); // 0=Dom, 1=Lun, etc.
+      dayMap.set(dia, (dayMap.get(dia) || 0) + 1);
+    }
+
+    // Ordenar empezando por Lunes (1) hasta Domingo (0)
+    const ordenDias = [1, 2, 3, 4, 5, 6, 0]; // Lun, Mar, Mié, Jue, Vie, Sáb, Dom
+
+    const labels: string[] = [];
+    const values: number[] = [];
+
+    for (const d of ordenDias) {
+      labels.push(diasSemana[d]);
+      values.push(dayMap.get(d) || 0);
+    }
+
+    return { labels, values };
   }
 
   async getMonthly(fromISO: string, toISO: string, userId: number) {
@@ -116,28 +140,36 @@ export class ReportsService {
 
     console.log('📊 Alertas mensuales encontradas:', alerts.length);
 
-    // Calcular estadísticas basadas en alertas reales
-    const totalAlertas = alerts.length;
-
-    // Si no hay alertas, devolver valores vacíos
-    if (totalAlertas === 0) {
+    // Si no hay alertas
+    if (alerts.length === 0) {
       return {
-        labels: ['Sin alertas'],
-        values: [0],
+        labels: ['Sem 1', 'Sem 2', 'Sem 3', 'Sem 4'],
+        values: [0, 0, 0, 0],
       };
     }
 
-    // Agrupar por tipo de alerta o por día
-    const porDia = new Map<string, number>();
-    for (const a of alerts) {
-      const dia = new Date(a.fecha).toLocaleDateString();
-      porDia.set(dia, (porDia.get(dia) || 0) + 1);
+    // Agrupar por semana del mes (1-4)
+    const weekMap = new Map<number, number>();
+    for (let w = 1; w <= 4; w++) {
+      weekMap.set(w, 0);
     }
 
-    return {
-      labels: Array.from(porDia.keys()),
-      values: Array.from(porDia.values()),
-    };
+    for (const a of alerts) {
+      const fecha = new Date(a.fecha);
+      const diaDelMes = fecha.getDate();
+      const semana = Math.min(4, Math.ceil(diaDelMes / 7)); // Semana 1-4
+      weekMap.set(semana, (weekMap.get(semana) || 0) + 1);
+    }
+
+    const labels = ['Sem 1', 'Sem 2', 'Sem 3', 'Sem 4'];
+    const values = [
+      weekMap.get(1) || 0,
+      weekMap.get(2) || 0,
+      weekMap.get(3) || 0,
+      weekMap.get(4) || 0,
+    ];
+
+    return { labels, values };
   }
 
   // --- EXPORTAR ---
