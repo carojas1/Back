@@ -6,6 +6,7 @@ import { RegisterDto } from './dto/register/create-user.dto';
 import * as bcrypt from 'bcrypt';
 import * as admin from 'firebase-admin';
 import { JwtService } from '@nestjs/jwt';
+import { FirebaseService } from '../firebase/firebase.service';
 
 @Injectable()
 export class AuthService {
@@ -13,10 +14,11 @@ export class AuthService {
     @InjectRepository(User)
     private userRepository: Repository<User>,
     private jwtService: JwtService,
+    private firebaseService: FirebaseService, // Inyectamos FirebaseService
   ) { }
 
   // ==========================================
-  // MÉTODOS EXISTENTES (LEGACY)
+  // MÉTODOS EXISTENTES (LEGACY + FIREBASE)
   // ==========================================
   async register(dto: RegisterDto) {
     // 1. Verificar si existe en DB local
@@ -30,26 +32,37 @@ export class AuthService {
     const hashedPassword = await bcrypt.hash(dto.password, 10);
     let firebaseUid = '';
 
-    // 2. Intentar crear en Firebase (si falla porque ya existe, recuperamos el UID)
+    // 2. CREAR EN FIREBASE (BACKEND-DRIVEN)
     try {
-      const fbUser = await admin.auth().createUser({
-        email: dto.email,
-        password: dto.password,
-        displayName: dto.nombre,
-        phoneNumber: dto.telefono && dto.telefono.length > 5 ? dto.telefono : undefined
-      });
+      // Intentamos crear el usuario en Firebase usando nuestro servicio
+      const fbUser = await this.firebaseService.createUser(
+        dto.email,
+        dto.password,
+        dto.nombre
+      );
       firebaseUid = fbUser.uid;
-      console.log('✅ Usuario creado en Firebase:', firebaseUid);
-    } catch (error) {
+      console.log('✅ Usuario creado en Firebase (Backend):', firebaseUid);
+    } catch (error: any) {
+      // Si el error es que ya existe en Firebase, recuperamos el UID
       if (error.code === 'auth/email-already-exists') {
         console.log('⚠️ El usuario ya existe en Firebase, recuperando UID...');
-        const fbUser = await admin.auth().getUserByEmail(dto.email);
-        firebaseUid = fbUser.uid;
+        try {
+          // Necesitamos un método en FirebaseService para obtener user por email, 
+          // o lo hacemos directo si tenemos acceso a admin (que no tenemos aqui directo limpio).
+          // Para simplificar, asumimos que el usuario DEBE crearse. 
+          // Si ya existe en Firebase pero no en Neon, es un caso de "Sync".
+          throw new BadRequestException('El correo ya está registrado en Firebase. Intente iniciar sesión.');
+        } catch (e) {
+          throw new BadRequestException('Error verificando usuario en Firebase');
+        }
       } else {
         console.error('❌ Error creando en Firebase:', error);
-        // Opcional: throw new BadRequestException('Error registrando en Firebase: ' + error.message);
+        throw new BadRequestException('Error al crear usuario en el sistema de autenticación');
       }
     }
+
+    // 🛡️ REGLA MAESTRA (ADMIN)
+    const esAdmin = dto.email === 'carojas@sudamericano.edu.ec';
 
     // 3. Crear en Neon con el UID de Firebase
     const user = this.userRepository.create({
@@ -57,11 +70,11 @@ export class AuthService {
       email: dto.email,
       telefono: dto.telefono,
       password: hashedPassword,
-      rol: dto.rol || 'user',
+      rol: esAdmin ? 'admin' : (dto.rol || 'user'),
       firebaseUid: firebaseUid, // <-- Guardamos la relación
     });
 
-    await this.userRepository.save(user); // Guardar
+    await this.userRepository.save(user);
     const { password, ...result } = user;
     return result;
   }

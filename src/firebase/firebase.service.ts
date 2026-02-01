@@ -64,4 +64,17 @@ export class FirebaseService implements OnModuleInit {
             return null;
         }
     }
+    async createUser(email: string, password: string, displayName: string) {
+        if (!this.app) throw new Error('Firebase no inicializado');
+        try {
+            return await admin.auth().createUser({
+                email,
+                password,
+                displayName,
+            });
+        } catch (error) {
+            console.error('❌ Error creando usuario en Firebase:', error);
+            throw error;
+        }
+    }
 }
