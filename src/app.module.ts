@@ -15,11 +15,12 @@ import { ClientesModule } from './clientes/clientes.module';
 import { UsersModule } from './users/users.module';
 import { ReportsModule } from './reports.module';
 import { AlertModule } from './alert.module';
-import { FirebaseModule } from './firebase/firebase.module';
-
 // Lentes (nuevo)
 import { LentesController } from './lentes.controller';
 import { LentesService } from './lentes.service';
+
+// Firebase (nuevo)
+import { FirebaseModule } from './firebase/firebase.module';
 
 @Module({
   imports: [
@@ -34,7 +35,7 @@ import { LentesService } from './lentes.service';
       // 👇 Registramos explícitamente TODAS las entidades
       entities: [User, Alert, Lente, Contacto, ExportHistory],
 
-      synchronize: false,
+      synchronize: true, // ⚠️ ACTIVADO TEMPORALMENTE para crear columna firebaseUid
       ssl: {
         rejectUnauthorized: false,
       },
@@ -45,11 +46,9 @@ import { LentesService } from './lentes.service';
     UsersModule,
     ReportsModule,
     AlertModule,
-    FirebaseModule, // 🔥 Notificaciones push
+    FirebaseModule, // 👈 Registrado
   ],
   controllers: [LentesController],
   providers: [LentesService],
 })
 export class AppModule { }
-
-

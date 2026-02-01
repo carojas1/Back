@@ -29,6 +29,9 @@ export class User {
   @Column()
   password: string;
 
+  @Column({ nullable: true })
+  firebaseUid: string;  // <-- ID único de Firebase Auth
+
   @Column({ default: 'user' })
   rol: string;
 
