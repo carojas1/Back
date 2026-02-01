@@ -22,15 +22,19 @@ export class ReportsService {
   ) {
     const user = process.env.SMTP_USER || 'alertavision706@gmail.com';
     const pass = process.env.SMTP_PASS || 'whtp jyvo ylae fjga';
-    // Configuración robusta para Gmail en la nube
+
+    // Configuración robusta para Gmail (Puerto 587 es más compatible con Render)
     this.transporter = nodemailer.createTransport({
       host: 'smtp.gmail.com',
-      port: 465, // SSL
-      secure: true,
-      auth: {
-        user: process.env.SMTP_USER || 'alertavision706@gmail.com',
-        pass: process.env.SMTP_PASS || 'whtp jyvo ylae fjga',
+      port: 587,
+      secure: false, // false para 587 (STARTTLS)
+      auth: { user, pass },
+      tls: {
+        rejectUnauthorized: false, // Ayuda si hay problemas de certificados en la red interna
       },
+      // Timeout de conexión 10s
+      connectionTimeout: 10000,
+      socketTimeout: 10000
     });
   }
 
@@ -418,14 +422,21 @@ export class ReportsService {
       console.log('📧 Enviando email a:', email);
 
       try {
-        await this.transporter.sendMail(mailOptions);
+        // Timeout de 8 segundos para no colgar el servidor
+        const sendPromise = this.transporter.sendMail(mailOptions);
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Tiempo de espera agotado (Timeout 8s)')), 8000)
+        );
+
+        await Promise.race([sendPromise, timeoutPromise]);
+
         console.log('✅ Email enviado exitosamente');
         return { message: '¡Reporte enviado correctamente!', success: true };
       } catch (emailError) {
         // Log el error pero NO fallar - devolver éxito parcial
         console.error('⚠️ Error enviando email (SMTP):', emailError.message);
         return {
-          message: 'Reporte generado. El envío de email falló - verifica la configuración SMTP.',
+          message: 'Reporte generado. El envío de email falló o tardó demasiado, pero los datos están guardados.',
           success: false,
           emailError: emailError.message
         };
