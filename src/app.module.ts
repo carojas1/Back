@@ -15,6 +15,7 @@ import { ClientesModule } from './clientes/clientes.module';
 import { UsersModule } from './users/users.module';
 import { ReportsModule } from './reports.module';
 import { AlertModule } from './alert.module';
+import { FirebaseModule } from './firebase/firebase.module';
 
 // Lentes (nuevo)
 import { LentesController } from './lentes.controller';
@@ -44,9 +45,11 @@ import { LentesService } from './lentes.service';
     UsersModule,
     ReportsModule,
     AlertModule,
+    FirebaseModule, // 🔥 Notificaciones push
   ],
   controllers: [LentesController],
   providers: [LentesService],
 })
 export class AppModule { }
+
 

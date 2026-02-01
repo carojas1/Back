@@ -15,34 +15,37 @@ export class LentesController {
 
     /**
      * GET /lentes/status
-     * Obtener estado actual de los lentes del usuario autenticado
+     * Obtener estado de los lentes (autenticado)
      */
     @Get('status')
     @UseGuards(JwtAuthGuard)
-    getStatus(@Request() req) {
-        const userId = req.user.id;
-        return this.lentesService.getStatus(userId);
+    getStatus(@Request() req): LensStatus {
+        // Usar el email del usuario para obtener estado
+        const email = req.user.email;
+        return this.lentesService.getStatusByEmail(email);
     }
 
     /**
      * POST /lentes/silence
-     * Silenciar la alarma del ESP32 desde la app
+     * Silenciar la alarma desde la app (autenticado)
      */
     @Post('silence')
     @UseGuards(JwtAuthGuard)
     silenceAlarm(@Request() req) {
-        const userId = req.user.id;
-        const silenciado = this.lentesService.silenceAlarm(userId);
+        const email = req.user.email;
+        console.log(`🔇 Usuario ${email} solicita silenciar alarma`);
+
+        const silenciado = this.lentesService.silenceByEmail(email);
         return {
             success: silenciado,
-            message: silenciado ? 'Alarma silenciada' : 'No hay alarma activa',
+            message: 'Alarma silenciada - El ESP32 se detendrá en su próxima verificación',
         };
     }
 
     /**
      * POST /lentes/update
-     * Endpoint para que el ESP32 actualice el estado de los lentes
-     * No requiere autenticación JWT (usa email de usuario)
+     * Endpoint para que el ESP32 actualice el estado
+     * NO requiere JWT (usa email directamente)
      */
     @Post('update')
     updateStatus(
@@ -54,29 +57,51 @@ export class LentesController {
             alarmaActiva?: boolean;
         },
     ) {
-        // Por ahora simulamos el userId basándonos en el email
-        // En producción, buscaríamos el usuario por email
         console.log('📡 ESP32 actualizando estado:', body);
 
-        // Retornamos confirmación
+        this.lentesService.updateStatusByEmail(
+            body.email,
+            body.conectados,
+            body.bateria,
+            body.alarmaActiva ?? false,
+        );
+
         return {
             success: true,
             message: 'Estado actualizado',
-            shouldSilence: false, // El frontend puede setear esto a true para silenciar
         };
     }
 
     /**
      * POST /lentes/check-silence
      * El ESP32 pregunta si debe silenciar la alarma
+     * NO requiere JWT
      */
     @Post('check-silence')
     checkSilence(@Body() body: { email: string }) {
-        console.log('🔇 ESP32 verificando si debe silenciar:', body.email);
-        // Por ahora siempre retorna false
-        // En producción, verificaríamos el estado de silencio del usuario
+        console.log('🔇 ESP32 verificando silencio para:', body.email);
+
+        const shouldSilence = this.lentesService.checkAndResetSilence(body.email);
+
         return {
-            shouldSilence: false,
+            shouldSilence,
+        };
+    }
+
+    /**
+     * POST /lentes/activate-alarm
+     * El ESP32 notifica que la alarma está activa
+     * NO requiere JWT
+     */
+    @Post('activate-alarm')
+    activateAlarm(@Body() body: { email: string }) {
+        console.log('🚨 ESP32 activó alarma para:', body.email);
+
+        this.lentesService.activateAlarm(body.email);
+
+        return {
+            success: true,
+            message: 'Alarma registrada',
         };
     }
 }
