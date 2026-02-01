@@ -213,151 +213,189 @@ export class ReportsService {
     });
   }
 
-  async sendReportToEmail(user: User, email: string, tab: string) {
-    if (!this.isValidTab(tab)) throw new Error('Tipo de reporte no válido');
-
-    const now = new Date();
-    let startDate: Date;
-    let endDate: Date = now;
-    let periodoLabel = '';
-    let agrupador: 'day' | 'hour' | 'month' = 'day';
-
-    if (tab === 'diario') {
-      startDate = this.startOfDay(now);
-      endDate = this.endOfDay(now);
-      periodoLabel = `Día: ${startDate.toLocaleDateString()}`;
-      agrupador = 'hour';
-    } else if (tab === 'semanal') {
-      const dayOfWeek = now.getDay();
-      startDate = this.startOfDay(new Date(now));
-      startDate.setDate(now.getDate() - dayOfWeek);
-      endDate = this.endOfDay(now);
-      periodoLabel = `Semana: ${startDate.toLocaleDateString()} al ${endDate.toLocaleDateString()}`;
-      agrupador = 'day';
-    } else {
-      startDate = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0);
-      endDate = this.endOfDay(now);
-      periodoLabel = `Mes: ${startDate.toLocaleString('default', { month: 'long' })}`;
-      agrupador = 'day';
+  async sendReportToEmail(user: { id: number; nombre?: string; email?: string }, email: string, tab: string) {
+    // Validación robusta
+    if (!user || !user.id) {
+      console.error('❌ Export error: Usuario inválido', user);
+      throw new Error('Usuario no válido para generar reporte');
     }
 
-    const alerts = await this.alertRepository.find({
-      where: {
-        fecha: Between(startDate, endDate),
-        usuarioId: user.id,
-      },
-      order: { fecha: 'ASC' },
-    });
-
-    const totalAlertas = alerts.length;
-
-    const contador: Record<string, number> = {};
-    for (const alert of alerts) {
-      const date = new Date(alert.fecha);
-      let key = '';
-      if (agrupador === 'hour') key = `${date.getHours()}:00`;
-      else if (agrupador === 'day') key = date.toLocaleDateString();
-      else key = `${date.getMonth() + 1}/${date.getFullYear()}`;
-      contador[key] = (contador[key] || 0) + 1;
+    if (!email || !email.includes('@')) {
+      console.error('❌ Export error: Email inválido', email);
+      throw new Error('Email no válido');
     }
 
-    let diaCritico = '';
-    let max = 0;
-    for (const [k, v] of Object.entries(contador)) {
-      if (v > max) {
-        max = v;
-        diaCritico = k;
-      }
+    if (!this.isValidTab(tab)) {
+      console.error('❌ Export error: Tab inválido', tab);
+      throw new Error('Tipo de reporte no válido');
     }
 
-    let diffSemana = '+0';
+    const userName = user.nombre || 'Usuario';
+
     try {
-      const { start: prevStart, end: prevEnd } = this.lastWeekRange(startDate);
-      const prevCount = await this.alertRepository.count({
+      const now = new Date();
+      let startDate: Date;
+      let endDate: Date = now;
+      let periodoLabel = '';
+      let agrupador: 'day' | 'hour' | 'month' = 'day';
+
+      if (tab === 'diario') {
+        startDate = this.startOfDay(now);
+        endDate = this.endOfDay(now);
+        periodoLabel = `Día: ${startDate.toLocaleDateString()}`;
+        agrupador = 'hour';
+      } else if (tab === 'semanal') {
+        const dayOfWeek = now.getDay();
+        startDate = this.startOfDay(new Date(now));
+        startDate.setDate(now.getDate() - dayOfWeek);
+        endDate = this.endOfDay(now);
+        periodoLabel = `Semana: ${startDate.toLocaleDateString()} al ${endDate.toLocaleDateString()}`;
+        agrupador = 'day';
+      } else {
+        startDate = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0);
+        endDate = this.endOfDay(now);
+        periodoLabel = `Mes: ${startDate.toLocaleString('default', { month: 'long' })}`;
+        agrupador = 'day';
+      }
+
+      console.log('📧 Generando reporte:', { userId: user.id, email, tab, startDate, endDate });
+
+      const alerts = await this.alertRepository.find({
         where: {
-          fecha: Between(prevStart, prevEnd),
+          fecha: Between(startDate, endDate),
           usuarioId: user.id,
         },
+        order: { fecha: 'ASC' },
       });
-      const delta = totalAlertas - prevCount;
-      diffSemana = (delta >= 0 ? '+' : '') + delta.toString();
-    } catch { }
 
-    let grafica = '';
-    const dias = this.sortKeys(Object.keys(contador), agrupador);
-    for (const dia of dias) {
-      const n = contador[dia];
-      grafica += `${dia}: ${'█'.repeat(Math.max(1, n))}  (${n})\n`;
-    }
+      const totalAlertas = alerts.length;
 
-    let mensajePersonalizado = '';
-    if (totalAlertas === 0) {
-      mensajePersonalizado = `¡Excelente ${user.nombre}! No detectamos fatiga.`;
-    } else if (totalAlertas < 3) {
-      mensajePersonalizado = 'Nivel aceptable. Mantén tus buenos hábitos.';
-    } else {
-      mensajePersonalizado =
-        'Precaución: se detectaron varios episodios. Descansa.';
-    }
+      const contador: Record<string, number> = {};
+      for (const alert of alerts) {
+        const date = new Date(alert.fecha);
+        let key = '';
+        if (agrupador === 'hour') key = `${date.getHours()}:00`;
+        else if (agrupador === 'day') key = date.toLocaleDateString();
+        else key = `${date.getMonth() + 1}/${date.getFullYear()}`;
+        contador[key] = (contador[key] || 0) + 1;
+      }
 
-    await this.exportHistoryRepository.save({ email });
-    const exportHistory = await this.exportHistoryRepository.find({
-      where: { email },
-      order: { created_at: 'DESC' },
-      take: 5,
-    });
+      let diaCritico = '';
+      let max = 0;
+      for (const [k, v] of Object.entries(contador)) {
+        if (v > max) {
+          max = v;
+          diaCritico = k;
+        }
+      }
 
-    let historialHtml = '';
-    if (exportHistory.length > 0) {
-      historialHtml = `
-      <div style="margin-top:17px;">
-        <div style="font-weight:600;margin-bottom:7px;color:#5a4228;">🕑 Últimas exportaciones</div>
-        <ul style="padding-left:17px;margin:0;">
-          ${exportHistory.map((e) => `<li style="margin-bottom:3px;">${new Date(e.created_at).toLocaleString()}</li>`).join('')}
-        </ul>
-      </div>`;
-    }
+      let diffSemana = '+0';
+      try {
+        const { start: prevStart, end: prevEnd } = this.lastWeekRange(startDate);
+        const prevCount = await this.alertRepository.count({
+          where: {
+            fecha: Between(prevStart, prevEnd),
+            usuarioId: user.id,
+          },
+        });
+        const delta = totalAlertas - prevCount;
+        diffSemana = (delta >= 0 ? '+' : '') + delta.toString();
+      } catch (e) {
+        console.log('⚠️ No se pudo calcular diferencia semanal:', e);
+      }
 
-    const html = `
-      <div style="max-width:540px;margin:20px auto;font-family:Arial,sans-serif;background:#fcf8f5;border-radius:10px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,0.1);">
-        <div style="background:#007bff;color:#fff;padding:20px;text-align:center;">
-          <h2 style="margin:0;">Reporte de Fatiga (${tab})</h2>
-          <p style="margin:5px 0 0 0;">Hola, ${user.nombre}</p>
+      let grafica = '';
+      const dias = this.sortKeys(Object.keys(contador), agrupador);
+      for (const dia of dias) {
+        const n = contador[dia];
+        grafica += `${dia}: ${'█'.repeat(Math.max(1, n))}  (${n})\n`;
+      }
+
+      let mensajePersonalizado = '';
+      if (totalAlertas === 0) {
+        mensajePersonalizado = `¡Excelente ${userName}! No detectamos fatiga.`;
+      } else if (totalAlertas < 3) {
+        mensajePersonalizado = 'Nivel aceptable. Mantén tus buenos hábitos.';
+      } else {
+        mensajePersonalizado =
+          'Precaución: se detectaron varios episodios. Descansa.';
+      }
+
+      // Guardar historial (con manejo de error)
+      try {
+        await this.exportHistoryRepository.save({ email });
+      } catch (e) {
+        console.log('⚠️ No se pudo guardar historial de exportación:', e);
+      }
+
+      let historialHtml = '';
+      try {
+        const exportHistory = await this.exportHistoryRepository.find({
+          where: { email },
+          order: { created_at: 'DESC' },
+          take: 5,
+        });
+
+        if (exportHistory.length > 0) {
+          historialHtml = `
+          <div style="margin-top:17px;">
+            <div style="font-weight:600;margin-bottom:7px;color:#5a4228;">🕑 Últimas exportaciones</div>
+            <ul style="padding-left:17px;margin:0;">
+              ${exportHistory.map((e) => `<li style="margin-bottom:3px;">${new Date(e.created_at).toLocaleString()}</li>`).join('')}
+            </ul>
+          </div>`;
+        }
+      } catch (e) {
+        console.log('⚠️ No se pudo obtener historial:', e);
+      }
+
+      const html = `
+        <div style="max-width:540px;margin:20px auto;font-family:Arial,sans-serif;background:#fcf8f5;border-radius:10px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,0.1);">
+          <div style="background:#007bff;color:#fff;padding:20px;text-align:center;">
+            <h2 style="margin:0;">Reporte de Fatiga (${tab})</h2>
+            <p style="margin:5px 0 0 0;">Hola, ${userName}</p>
+          </div>
+          <div style="padding:20px;">
+             <div style="display:flex;justify-content:space-around;margin-bottom:20px;text-align:center;">
+                <div>
+                  <strong style="font-size:1.5em;color:#333;">${totalAlertas}</strong><br>
+                  <span style="color:#666;">Alertas</span>
+                </div>
+                <div>
+                  <strong style="font-size:1.5em;color:#333;">${diaCritico || '-'}</strong><br>
+                  <span style="color:#666;">Día Crítico</span>
+                </div>
+                <div>
+                  <strong style="font-size:1.5em;color:#333;">${diffSemana}</strong><br>
+                  <span style="color:#666;">vs Semana Ant.</span>
+                </div>
+             </div>
+             
+             <div style="background:#eee;padding:15px;border-radius:5px;font-family:monospace;white-space:pre-wrap;">${grafica || 'Sin datos para mostrar.'}</div>
+
+             <p style="margin-top:20px;color:#d9534f;font-weight:bold;">${mensajePersonalizado}</p>
+             
+             ${historialHtml}
+          </div>
         </div>
-        <div style="padding:20px;">
-           <div style="display:flex;justify-content:space-around;margin-bottom:20px;text-align:center;">
-              <div>
-                <strong style="font-size:1.5em;color:#333;">${totalAlertas}</strong><br>
-                <span style="color:#666;">Alertas</span>
-              </div>
-              <div>
-                <strong style="font-size:1.5em;color:#333;">${diaCritico || '-'}</strong><br>
-                <span style="color:#666;">Día Crítico</span>
-              </div>
-              <div>
-                <strong style="font-size:1.5em;color:#333;">${diffSemana}</strong><br>
-                <span style="color:#666;">vs Semana Ant.</span>
-              </div>
-           </div>
-           
-           <div style="background:#eee;padding:15px;border-radius:5px;font-family:monospace;white-space:pre-wrap;">${grafica || 'Sin datos para mostrar.'}</div>
+      `;
 
-           <p style="margin-top:20px;color:#d9534f;font-weight:bold;">${mensajePersonalizado}</p>
-           
-           ${historialHtml}
-        </div>
-      </div>
-    `;
+      const mailOptions = {
+        from:
+          process.env.SMTP_FROM || '"Alerta Visión" <alertavision706@gmail.com>',
+        to: email,
+        subject: `Reporte ${tab} - ${userName}`,
+        html,
+      };
 
-    const mailOptions = {
-      from:
-        process.env.SMTP_FROM || '"Alerta Visión" <alertavision706@gmail.com>',
-      to: email,
-      subject: `Reporte ${tab} - ${user.nombre}`,
-      html,
-    };
+      console.log('📧 Enviando email a:', email);
+      await this.transporter.sendMail(mailOptions);
+      console.log('✅ Email enviado exitosamente');
 
-    await this.transporter.sendMail(mailOptions);
-    return { message: '¡Reporte enviado correctamente!' };
+      return { message: '¡Reporte enviado correctamente!' };
+    } catch (error) {
+      console.error('❌ Error en sendReportToEmail:', error);
+      throw new Error(`Error enviando reporte: ${error.message || 'Error desconocido'}`);
+    }
   }
 }

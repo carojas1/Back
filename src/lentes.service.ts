@@ -1,11 +1,22 @@
 import { Injectable } from '@nestjs/common';
 
+// Interfaz para datos de diagnóstico del ESP32
+export interface DiagnosticoESP32 {
+    sensor_ok: boolean;
+    bateria_ok: boolean;
+    wifi_ok: boolean;
+    backend_ok: boolean;
+    lastSensorChangeMs: number;
+    nivel1Activa: boolean;
+}
+
 export interface LensStatus {
     conectados: boolean;
     bateria: number;
     alarmaActiva: boolean;
     shouldSilence: boolean;
     ultimaActualizacion: Date;
+    diagnostico?: DiagnosticoESP32; // Nuevo campo para puntos rojos en 3D
 }
 
 @Injectable()
@@ -43,6 +54,7 @@ export class LentesService {
         conectados: boolean,
         bateria: number,
         alarmaActiva = false,
+        diagnostico?: DiagnosticoESP32,
     ): LensStatus {
         const existente = this.estadoPorEmail.get(email);
 
@@ -52,6 +64,7 @@ export class LentesService {
             alarmaActiva,
             shouldSilence: existente?.shouldSilence ?? false,
             ultimaActualizacion: new Date(),
+            diagnostico: diagnostico || existente?.diagnostico,
         };
 
         this.estadoPorEmail.set(email, estado);

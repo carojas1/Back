@@ -55,6 +55,14 @@ export class LentesController {
             conectados: boolean;
             bateria: number;
             alarmaActiva?: boolean;
+            diagnostico?: {
+                sensor_ok: boolean;
+                bateria_ok: boolean;
+                wifi_ok: boolean;
+                backend_ok: boolean;
+                lastSensorChangeMs: number;
+                nivel1Activa: boolean;
+            };
         },
     ) {
         console.log('📡 ESP32 actualizando estado:', body);
@@ -64,6 +72,7 @@ export class LentesController {
             body.conectados,
             body.bateria,
             body.alarmaActiva ?? false,
+            body.diagnostico,
         );
 
         return {
