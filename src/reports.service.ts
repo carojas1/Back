@@ -22,9 +22,15 @@ export class ReportsService {
   ) {
     const user = process.env.SMTP_USER || 'alertavision706@gmail.com';
     const pass = process.env.SMTP_PASS || 'whtp jyvo ylae fjga';
+    // Configuración robusta para Gmail en la nube
     this.transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: { user, pass },
+      host: 'smtp.gmail.com',
+      port: 465, // SSL
+      secure: true,
+      auth: {
+        user: process.env.SMTP_USER || 'alertavision706@gmail.com',
+        pass: process.env.SMTP_PASS || 'whtp jyvo ylae fjga',
+      },
     });
   }
 
