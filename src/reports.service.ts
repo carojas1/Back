@@ -23,18 +23,17 @@ export class ReportsService {
     const user = process.env.SMTP_USER || 'alertavision706@gmail.com';
     const pass = process.env.SMTP_PASS || 'whtp jyvo ylae fjga';
 
-    // Configuración robusta para Gmail (Puerto 587 es más compatible con Render)
+    // Configuración FINAL robusta para Gmail
+    // Puerto 465 (SSL) es el único confiable desde servidores Cloud como Render
     this.transporter = nodemailer.createTransport({
       host: 'smtp.gmail.com',
-      port: 587,
-      secure: false, // false para 587 (STARTTLS)
+      port: 465,
+      secure: true, // true para 465
       auth: { user, pass },
-      tls: {
-        rejectUnauthorized: false, // Ayuda si hay problemas de certificados en la red interna
-      },
-      // Timeout de conexión 10s
+      // Timeouts explícitos para no colgar la conexión
       connectionTimeout: 10000,
-      socketTimeout: 10000
+      greetingTimeout: 5000,
+      socketTimeout: 15000,
     });
   }
 
@@ -422,10 +421,10 @@ export class ReportsService {
       console.log('📧 Enviando email a:', email);
 
       try {
-        // Timeout de 8 segundos para no colgar el servidor
+        // Timeout de 15 segundos para no colgar el servidor
         const sendPromise = this.transporter.sendMail(mailOptions);
         const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Tiempo de espera agotado (Timeout 8s)')), 8000)
+          setTimeout(() => reject(new Error('Tiempo de espera agotado (Timeout 15s)')), 15000)
         );
 
         await Promise.race([sendPromise, timeoutPromise]);
