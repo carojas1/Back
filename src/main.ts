@@ -60,6 +60,7 @@ async function bootstrap() {
 
   await app.listen(port, '0.0.0.0');
   console.log(`✅ Servidor corriendo en http://localhost:${port}`);
+  console.log('🚀 Backend iniciado v2 - CORS Mobile OK');
 }
 
 bootstrap();
