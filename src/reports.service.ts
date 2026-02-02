@@ -23,19 +23,11 @@ export class ReportsService {
     const user = process.env.SMTP_USER || 'alertavision706@gmail.com';
     const pass = process.env.SMTP_PASS || 'whtp jyvo ylae fjga';
 
-    // Configuración HÍBRIDA para Gmail (Puerto 587 + STARTTLS)
-    // A veces Render bloquea el 465, probamos 587 con timeout largo
+    // Configuración SIMPLE para Gmail (service: gmail)
+    // Esta es la config original que funcionaba antes
     this.transporter = nodemailer.createTransport({
-      host: 'smtp.gmail.com',
-      port: 587,
-      secure: false, // false para STARTTLS
+      service: 'gmail',
       auth: { user, pass },
-      tls: {
-        rejectUnauthorized: false
-      },
-      connectionTimeout: 20000,
-      greetingTimeout: 20000,
-      socketTimeout: 20000,
     });
   }
 
@@ -424,13 +416,8 @@ export class ReportsService {
       console.log('📧 Enviando email a:', email);
 
       try {
-        // Timeout de 20 segundos para no colgar el servidor
-        const sendPromise = this.transporter.sendMail(mailOptions);
-        const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Tiempo de espera agotado (Timeout 20s)')), 20000)
-        );
-
-        await Promise.race([sendPromise, timeoutPromise]);
+        // Envío directo sin timeout (service: gmail maneja internamente)
+        await this.transporter.sendMail(mailOptions);
 
         console.log('✅ Email enviado exitosamente');
         return { message: '¡Reporte enviado correctamente!', success: true };
