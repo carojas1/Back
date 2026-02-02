@@ -363,10 +363,10 @@ export class ReportsService {
 
         if (exportHistory.length > 0) {
           historialHtml = `
-          <div style="margin-top:17px;">
-            <div style="font-weight:600;margin-bottom:7px;color:#5a4228;">🕑 Últimas exportaciones</div>
-            <ul style="padding-left:17px;margin:0;">
-              ${exportHistory.map((e) => `<li style="margin-bottom:3px;">${new Date(e.created_at).toLocaleString()}</li>`).join('')}
+          <div style="margin-top:20px;padding:15px;background:#1a2d42;border-radius:10px;">
+            <div style="font-weight:600;margin-bottom:10px;color:#00d4ff;font-size:0.95em;">🕑 Últimas exportaciones</div>
+            <ul style="padding-left:20px;margin:0;color:#8899a6;">
+              ${exportHistory.map((e) => `<li style="margin-bottom:5px;">${new Date(e.created_at).toLocaleString()}</li>`).join('')}
             </ul>
           </div>`;
         }
@@ -375,39 +375,41 @@ export class ReportsService {
       }
 
       const html = `
-        <div style="max-width:540px;margin:20px auto;font-family:Arial,sans-serif;background:#fcf8f5;border-radius:10px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,0.1);">
-          <div style="background:#007bff;color:#fff;padding:20px;text-align:center;">
-            <h2 style="margin:0;">Reporte de Fatiga (${normalizedTab})</h2>
-            <p style="margin:5px 0 0 0;">Hola, ${userName}</p>
+        <div style="max-width:540px;margin:20px auto;font-family:'Segoe UI',Arial,sans-serif;background:#0a1628;border-radius:16px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,0.3);">
+          <div style="background:linear-gradient(135deg,#1a3a5c 0%,#0d2137 100%);color:#fff;padding:25px;text-align:center;border-bottom:3px solid #00d4ff;">
+            <h2 style="margin:0;font-size:1.5em;color:#00d4ff;">🚗 Reporte de Fatiga</h2>
+            <p style="margin:8px 0 0 0;color:#8899a6;font-size:0.9em;">${normalizedTab.toUpperCase()} - ${userName}</p>
           </div>
-          <div style="padding:20px;">
-             <div style="display:flex;justify-content:space-around;margin-bottom:20px;text-align:center;">
-                <div>
-                  <strong style="font-size:1.5em;color:#333;">${totalAlertas}</strong><br>
-                  <span style="color:#666;">Alertas</span>
+          <div style="padding:25px;color:#e1e8ed;">
+             <div style="display:flex;justify-content:space-around;margin-bottom:25px;text-align:center;">
+                <div style="background:#1a2d42;padding:15px 20px;border-radius:12px;min-width:80px;">
+                  <strong style="font-size:1.8em;color:#00d4ff;display:block;">${totalAlertas}</strong>
+                  <span style="color:#8899a6;font-size:0.85em;">Alertas</span>
                 </div>
-                <div>
-                  <strong style="font-size:1.5em;color:#333;">${diaCritico || '-'}</strong><br>
-                  <span style="color:#666;">Día Crítico</span>
+                <div style="background:#1a2d42;padding:15px 20px;border-radius:12px;min-width:80px;">
+                  <strong style="font-size:1.8em;color:#ff6b6b;display:block;">${diaCritico || '-'}</strong>
+                  <span style="color:#8899a6;font-size:0.85em;">Día Crítico</span>
                 </div>
-                <div>
-                  <strong style="font-size:1.5em;color:#333;">${diffSemana}</strong><br>
-                  <span style="color:#666;">vs Semana Ant.</span>
+                <div style="background:#1a2d42;padding:15px 20px;border-radius:12px;min-width:80px;">
+                  <strong style="font-size:1.8em;color:#4ecdc4;display:block;">${diffSemana}</strong>
+                  <span style="color:#8899a6;font-size:0.85em;">vs Ant.</span>
                 </div>
              </div>
              
-             <div style="background:#eee;padding:15px;border-radius:5px;font-family:monospace;white-space:pre-wrap;">${grafica || 'Sin datos para mostrar.'}</div>
+             <div style="background:#0d2137;padding:18px;border-radius:10px;font-family:'Courier New',monospace;white-space:pre-wrap;color:#00d4ff;border:1px solid #1a3a5c;">${grafica || 'Sin datos para mostrar.'}</div>
 
-             <p style="margin-top:20px;color:#d9534f;font-weight:bold;">${mensajePersonalizado}</p>
+             <p style="margin-top:20px;padding:12px;background:${totalAlertas === 0 ? '#1a4d3e' : totalAlertas < 3 ? '#3d3a1a' : '#4d1a1a'};border-radius:8px;color:${totalAlertas === 0 ? '#4ecdc4' : totalAlertas < 3 ? '#f9c846' : '#ff6b6b'};font-weight:500;text-align:center;">${mensajePersonalizado}</p>
              
              ${historialHtml}
+             
+             <p style="margin-top:20px;text-align:center;color:#536471;font-size:0.8em;">Alerta Visión - Sistema de Monitoreo de Fatiga</p>
           </div>
         </div>
       `;
 
       const mailOptions = {
         from:
-          process.env.SMTP_FROM || '"Alerta Visión" <alertavision706@gmail.com>',
+          process.env.SMTP_FROM || '"Alerta Visión" <carojas@sudamericano.edu.ec>',
         to: email,
         subject: `Reporte ${normalizedTab} - ${userName}`,
         html,
