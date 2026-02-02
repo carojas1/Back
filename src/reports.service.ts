@@ -23,19 +23,17 @@ export class ReportsService {
     const user = process.env.SMTP_USER || 'alertavision706@gmail.com';
     const pass = process.env.SMTP_PASS || 'whtp jyvo ylae fjga';
 
-    // Configuración ROBUSTA para Nube (Render)
-    // Forzamos IPv4 (family: 4) para evitar timeouts de IPv6
+    // intento FINAL: Puerto 465 (SSL) + IPv4
     this.transporter = nodemailer.createTransport({
       host: 'smtp.gmail.com',
-      port: 587,
-      secure: false, // false para STARTTLS
+      port: 465,
+      secure: true, // TRUE para puerto 465
       auth: { user, pass },
       tls: {
-        rejectUnauthorized: false, // Permisivo con certificados
+        rejectUnauthorized: false,
       },
-      family: 4, // <--- CLAVE: Forzar IPv4
-      connectionTimeout: 30000, // 30s espera
-      greetingTimeout: 30000,
+      family: 4, // Forzar IPv4
+      connectionTimeout: 20000, // 20s
     });
   }
 
@@ -437,20 +435,21 @@ export class ReportsService {
         html,
       };
 
-      console.log('📧 Enviando email a:', email);
+      try {
+        // Volvemos a await para confirmar si sale o falla
+        await this.transporter.sendMail(mailOptions);
 
-      // ✅ ENVÍO EN SEGUNDO PLANO (BACKGROUND)
-      // Se inicia el envío pero NO bloqueamos la respuesta al usuario.
-      this.transporter.sendMail(mailOptions)
-        .then(() => console.log(`✅ Email enviado CORRECTAMENTE a ${email}`))
-        .catch(err => console.error(`❌ Error enviando email a ${email}:`, err.message));
-
-      console.log('🚀 Proceso de envío iniciado en background...');
-
-      return {
-        message: `El reporte se está enviando a ${email}.`,
-        success: true
-      };
+        console.log('✅ Email enviado exitosamente a', email);
+        return { message: '¡Reporte enviado correctamente!', success: true };
+      } catch (emailError) {
+        console.error('⚠️ Error enviando email (SMTP):', emailError.message);
+        // Si falla, avisamos pero no rompemos todo
+        return {
+          message: 'Reporte generado, pero hubo un error enviando el correo. Intenta de nuevo más tarde.',
+          success: true,
+          emailError: emailError.message
+        };
+      }
     } catch (error) {
       console.error('❌ Error en sendReportToEmail:', error);
       throw new Error(`Error generando reporte: ${error.message || 'Error desconocido'}`);
