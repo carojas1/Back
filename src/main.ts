@@ -15,35 +15,11 @@ async function bootstrap() {
   app.use(helmet());
   app.use(cookieParser());
 
-  // CORS
-  // CORS
+  // CORS Permisivo para Apps Híbridas y Web
   app.enableCors({
-    origin: (origin, callback) => {
-      // Permitir requests sin origen (Apps móbiles, Curl, Postman)
-      if (!origin) return callback(null, true);
-
-      const allowedOrigins = [
-        'http://localhost:4200',
-        'https://alerta-vision-frontend.vercel.app',
-        'http://localhost',             // Capacitor Android (HTTP)
-        'https://localhost',            // Capacitor Android (HTTPS) - ESTE ERA EL BLOQUEO
-        'capacitor://localhost',        // Capacitor iOS
-        'http://192.168.0.105',
-        'http://192.168.100.9',
-        'https://alerta-vision-backend.onrender.com'
-      ];
-
-      // Permitir cualquier subdominio o localhost dinámico en desarrollo si quieres:
-      if (allowedOrigins.includes(origin) || origin.startsWith('http://192.168.')) {
-        callback(null, true);
-      } else {
-        console.warn('⚠️ Origen bloqueado por CORS:', origin);
-        // callback(new Error('Not allowed by CORS')); // Descomentar para estricto
-        callback(null, true); // 🔥 PERMITIR TODO TEMPORALMENTE PARA ARREGLARLO YA
-      }
-    },
-    credentials: true,
+    origin: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    credentials: true,
     allowedHeaders: ['Content-Type', 'Authorization', 'x-requested-with'],
   });
 
@@ -54,7 +30,7 @@ async function bootstrap() {
   app.setGlobalPrefix('api');
 
   // Prefix Global (/api)
-  app.setGlobalPrefix('api');
+
 
   // Puerto dinámico para despliegue (Render, Railway, Vercel)
   const port = process.env.PORT || 3000;
