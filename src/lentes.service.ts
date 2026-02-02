@@ -123,4 +123,15 @@ export class LentesService {
         this.estadoPorEmail.set(email, estado);
         console.log(`🚨 Alarma activada para ${email}`);
     }
+
+    // Obtener todos los estados para el panel de Admin
+    getAllStatuses(): { email: string; status: LensStatus }[] {
+        const list: { email: string; status: LensStatus }[] = [];
+        this.estadoPorEmail.forEach((status, email) => {
+            // Solo devolver los que han tenido actividad reciente (últimos 30 días para evitar basura)
+            // O devolver todos. Devolvamos todos por ahora
+            list.push({ email, status });
+        });
+        return list;
+    }
 }

@@ -113,4 +113,14 @@ export class LentesController {
             message: 'Alarma registrada',
         };
     }
+
+    /**
+     * GET /lentes/admin/list
+     * Obtener listado de todos los lentes (para Admin Dashboard)
+     */
+    @Get('admin/list')
+    @UseGuards(JwtAuthGuard) // Solo usuarios autenticados (el front debe verificar rol admin)
+    getAdminList() {
+        return this.lentesService.getAllStatuses();
+    }
 }

@@ -16,14 +16,34 @@ async function bootstrap() {
   app.use(cookieParser());
 
   // CORS
+  // CORS
   app.enableCors({
-    origin: [
-      'http://localhost:4200',
-      'https://alerta-vision-frontend.vercel.app',
-    ],
+    origin: (origin, callback) => {
+      // Permitir requests sin origen (Apps móbiles, Curl, Postman)
+      if (!origin) return callback(null, true);
+
+      const allowedOrigins = [
+        'http://localhost:4200',
+        'https://alerta-vision-frontend.vercel.app',
+        'http://localhost',             // Capacitor Android
+        'capacitor://localhost',        // Capacitor iOS/Android
+        'http://192.168.0.105',         // Pruebas LAN
+        'http://192.168.100.9',         // Tu IP típica
+        'https://alerta-vision-backend.onrender.com'
+      ];
+
+      // Permitir cualquier subdominio o localhost dinámico en desarrollo si quieres:
+      if (allowedOrigins.includes(origin) || origin.startsWith('http://192.168.')) {
+        callback(null, true);
+      } else {
+        console.warn('⚠️ Origen bloqueado por CORS:', origin);
+        // callback(new Error('Not allowed by CORS')); // Descomentar para estricto
+        callback(null, true); // 🔥 PERMITIR TODO TEMPORALMENTE PARA ARREGLARLO YA
+      }
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-requested-with'],
   });
 
   // Validación global
