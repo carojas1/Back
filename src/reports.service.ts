@@ -474,7 +474,7 @@ export class ReportsService {
           sgMail.setApiKey(process.env.SENDGRID_API_KEY);
           await sgMail.send({
             to: email,
-            from: process.env.SMTP_FROM || 'alertaa69@gmail.com', // Sender verificado en SG
+            from: 'alertaa69@gmail.com', // FORZADO: Sender verificado en SG (Ignoramos env var incorrecta)
             subject: `Reporte ${normalizedTab} - ${userName}`,
             html: html,
           });

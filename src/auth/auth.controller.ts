@@ -30,47 +30,58 @@ export class AuthController {
     @Body() body: { firebaseUid: string; email: string; nombre?: string },
     @Headers('authorization') authHeader: string,
   ) {
-    // 1. Validar token (Modo Permisivo para evitar bloqueos)
-    let token = authHeader?.replace('Bearer ', '');
-
-    // Si no hay token, no bloqueamos (Emergencia)
-    if (!token) {
-      console.log('⚠️ Token no recibido en header, continuando en modo contingencia...');
-      token = 'ignored_token';
-    }
-
-    // Intentamos verificar, pero si falla, NO bloqueamos (Catch silencioso)
     try {
-      if (token !== 'ignored_token') {
-        await this.firebaseService.verifyToken(token);
-        console.log('✅ Token Firebase verificado correctamente');
+      console.log('🔄 Init Login:', body?.email);
+
+      if (!body || !body.email) {
+        console.error('❌ Login Error: Email faltante');
+        throw new UnauthorizedException('Email requerido');
       }
-    } catch (e) {
-      console.warn('⚠️ Fallo verificación token (pero permitiendo acceso):', e.message);
-    }
 
-    // Continuamos con el email del body (confianza en el cliente temporalmente)
-    console.log('🔥 Firebase sync procesando:', body.email);
+      // 1. Validar token (Modo Permisivo)
+      let token = authHeader?.replace('Bearer ', '');
 
-    // 2. Lógica de negocio
-    let user = await this.authService.findByEmail(body.email);
-
-    if (!user) {
-      user = await this.authService.createFromFirebase({
-        email: body.email,
-        nombre: body.nombre || body.email.split('@')[0],
-        firebaseUid: body.firebaseUid,
-      });
-      console.log('✅ Usuario creado:', user.email);
-    } else {
-      if (!user.firebaseUid) {
-        user = await this.authService.updateFirebaseUid(user.id, body.firebaseUid);
+      if (!token) {
+        token = 'ignored_token'; // Contingencia
       }
-      console.log('✅ Usuario sincronizado:', user.email);
-    }
 
-    // 3. Generar JWT del Backend
-    return this.authService.generateBackendToken(user);
+      try {
+        if (token !== 'ignored_token') {
+          await this.firebaseService.verifyToken(token);
+        }
+      } catch (e) {
+        console.warn('⚠️ Token verify fail:', e.message);
+      }
+
+      // 2. Lógica de negocio
+      let user = await this.authService.findByEmail(body.email);
+
+      if (!user) {
+        user = await this.authService.createFromFirebase({
+          email: body.email,
+          nombre: body.nombre || body.email.split('@')[0],
+          firebaseUid: body.firebaseUid || 'uid-' + Date.now(),
+        });
+        console.log('✅ Nuevo usuario creado');
+      } else {
+        // Actualizar UID
+        if (!user.firebaseUid && body.firebaseUid) {
+          user = await this.authService.updateFirebaseUid(user.id, body.firebaseUid);
+        }
+      }
+
+      // 3. Generar respuesta
+      const result = await this.authService.generateBackendToken(user);
+
+      if (!result) throw new Error('Token generation returned null');
+
+      console.log('🔑 Token generado para:', user.email);
+      return result;
+
+    } catch (err) {
+      console.error('❌ EXCEPTION LOGIN:', err);
+      throw new UnauthorizedException(err.message || 'Login failed');
+    }
   }
 
   @Post('firebase-register')
