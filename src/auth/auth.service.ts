@@ -99,8 +99,11 @@ export class AuthService {
       telefono: user.telefono, // Incluir telefono
     };
 
+    const accessToken = this.jwtService.sign(payload, { expiresIn: '7d' });
+
     return {
-      access_token: this.jwtService.sign(payload, { expiresIn: '7d' }),
+      access_token: accessToken,
+      token: accessToken, // 🔥 Compatibilidad
       user: {
         id: user.id,
         nombre: user.nombre,
@@ -121,8 +124,11 @@ export class AuthService {
       telefono: user.telefono,
     };
 
+    const accessToken = this.jwtService.sign(payload, { expiresIn: '7d' });
+
     return {
-      access_token: this.jwtService.sign(payload, { expiresIn: '7d' }),
+      access_token: accessToken,
+      token: accessToken, // 🔥 Compatibilidad: Enviamos ambos nombres por si el frontend busca 'token'
       user: {
         id: user.id,
         nombre: user.nombre,
