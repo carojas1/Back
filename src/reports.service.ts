@@ -438,7 +438,7 @@ export class ReportsService {
 
       const mailOptions = {
         from:
-          process.env.SMTP_FROM || '"Alerta Visión" <carojas@sudamericano.edu.ec>',
+          process.env.SMTP_FROM || '"Alerta Visión" <alertaa69@gmail.com>',
         to: email,
         subject: `Reporte ${normalizedTab} - ${userName}`,
         html,
@@ -474,7 +474,7 @@ export class ReportsService {
           sgMail.setApiKey(process.env.SENDGRID_API_KEY);
           await sgMail.send({
             to: email,
-            from: process.env.SMTP_FROM || 'carojas@sudamericano.edu.ec', // Sender verificado en SG
+            from: process.env.SMTP_FROM || 'alertaa69@gmail.com', // Sender verificado en SG
             subject: `Reporte ${normalizedTab} - ${userName}`,
             html: html,
           });
