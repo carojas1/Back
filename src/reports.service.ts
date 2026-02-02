@@ -33,6 +33,18 @@ export class ReportsService {
 
   // --- SERIES ---
 
+  // Helper para convertir a hora Ecuador (UTC-5) de forma segura
+  private toEcuadorTime(dateInput: Date | string): Date {
+    try {
+      if (!dateInput) return new Date();
+      const d = new Date(dateInput);
+      if (isNaN(d.getTime())) return new Date();
+      return new Date(d.getTime() - 5 * 60 * 60 * 1000);
+    } catch (e) {
+      return new Date();
+    }
+  }
+
   async getDaily(fromISO: string, toISO: string, userId: number) {
     // Usar fecha de hoy
     const from = new Date(fromISO);
@@ -62,8 +74,7 @@ export class ReportsService {
     }
 
     for (const a of alerts) {
-      // Ajuste UTC-5 (Ecuador)
-      const fechaEC = new Date(new Date(a.fecha).getTime() - 5 * 60 * 60 * 1000);
+      const fechaEC = this.toEcuadorTime(a.fecha);
       const hora = fechaEC.getHours();
       hourMap.set(hora, (hourMap.get(hora) || 0) + 1);
     }
@@ -109,9 +120,8 @@ export class ReportsService {
     }
 
     for (const a of alerts) {
-      // Ajuste UTC-5 (Ecuador)
-      const fechaEC = new Date(new Date(a.fecha).getTime() - 5 * 60 * 60 * 1000);
-      const dia = fechaEC.getDay(); // 0=Dom, 1=Lun, etc.
+      const fechaEC = this.toEcuadorTime(a.fecha);
+      const dia = fechaEC.getDay();
       dayMap.set(dia, (dayMap.get(dia) || 0) + 1);
     }
 
@@ -162,10 +172,9 @@ export class ReportsService {
     }
 
     for (const a of alerts) {
-      // Ajuste UTC-5 (Ecuador)
-      const fechaEC = new Date(new Date(a.fecha).getTime() - 5 * 60 * 60 * 1000);
+      const fechaEC = this.toEcuadorTime(a.fecha);
       const diaDelMes = fechaEC.getDate();
-      const semana = Math.min(4, Math.ceil(diaDelMes / 7)); // Semana 1-4
+      const semana = Math.min(4, Math.ceil(diaDelMes / 7));
       weekMap.set(semana, (weekMap.get(semana) || 0) + 1);
     }
 
@@ -301,10 +310,10 @@ export class ReportsService {
 
       const contador: Record<string, number> = {};
       for (const alert of alerts) {
-        const date = new Date(alert.fecha);
+        const date = this.toEcuadorTime(alert.fecha);
         let key = '';
         if (agrupador === 'hour') key = `${date.getHours()}:00`;
-        else if (agrupador === 'day') key = date.toLocaleDateString();
+        else if (agrupador === 'day') key = `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
         else key = `${date.getMonth() + 1}/${date.getFullYear()}`;
         contador[key] = (contador[key] || 0) + 1;
       }
