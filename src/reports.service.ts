@@ -23,11 +23,19 @@ export class ReportsService {
     const user = process.env.SMTP_USER || 'alertavision706@gmail.com';
     const pass = process.env.SMTP_PASS || 'whtp jyvo ylae fjga';
 
-    // Configuración SIMPLE para Gmail (service: gmail)
-    // Esta es la config original que funcionaba antes
+    // Configuración ROBUSTA para Nube (Render)
+    // Forzamos IPv4 (family: 4) para evitar timeouts de IPv6
     this.transporter = nodemailer.createTransport({
-      service: 'gmail',
+      host: 'smtp.gmail.com',
+      port: 587,
+      secure: false, // false para STARTTLS
       auth: { user, pass },
+      tls: {
+        rejectUnauthorized: false, // Permisivo con certificados
+      },
+      family: 4, // <--- CLAVE: Forzar IPv4
+      connectionTimeout: 30000, // 30s espera
+      greetingTimeout: 30000,
     });
   }
 
@@ -431,21 +439,18 @@ export class ReportsService {
 
       console.log('📧 Enviando email a:', email);
 
-      try {
-        // Envío directo sin timeout (service: gmail maneja internamente)
-        await this.transporter.sendMail(mailOptions);
+      // ✅ ENVÍO EN SEGUNDO PLANO (BACKGROUND)
+      // Se inicia el envío pero NO bloqueamos la respuesta al usuario.
+      this.transporter.sendMail(mailOptions)
+        .then(() => console.log(`✅ Email enviado CORRECTAMENTE a ${email}`))
+        .catch(err => console.error(`❌ Error enviando email a ${email}:`, err.message));
 
-        console.log('✅ Email enviado exitosamente');
-        return { message: '¡Reporte enviado correctamente!', success: true };
-      } catch (emailError) {
-        // Log el error pero NO fallar - devolver éxito parcial
-        console.error('⚠️ Error enviando email (SMTP):', emailError.message);
-        return {
-          message: 'Reporte generado y guardado en tu historial. (El envío por correo está demorando)',
-          success: true, // Cambiamos a true para que el frontend lo muestre verde puro
-          emailError: emailError.message
-        };
-      }
+      console.log('🚀 Proceso de envío iniciado en background...');
+
+      return {
+        message: `El reporte se está enviando a ${email}.`,
+        success: true
+      };
     } catch (error) {
       console.error('❌ Error en sendReportToEmail:', error);
       throw new Error(`Error generando reporte: ${error.message || 'Error desconocido'}`);
