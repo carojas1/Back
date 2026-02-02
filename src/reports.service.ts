@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between } from 'typeorm';
 import * as nodemailer from 'nodemailer';
 import { Resend } from 'resend';
+import * as sgMail from '@sendgrid/mail';
 
 // CORRECCIÓN DE RUTAS: Usamos ./ porque estamos en la raiz src
 import { Alert } from './alert.entity';
@@ -466,8 +467,28 @@ export class ReportsService {
         }
       }
 
+      // 2. Intentar vía SendGrid (API) - Prioridad Media (Permite envíos a todos verificando solo 1 sender)
+      if (process.env.SENDGRID_API_KEY) {
+        try {
+          console.log('🚀 Intentando envío vía SendGrid API...');
+          sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+          await sgMail.send({
+            to: email,
+            from: process.env.SMTP_FROM || 'carojas@sudamericano.edu.ec', // Sender verificado en SG
+            subject: `Reporte ${normalizedTab} - ${userName}`,
+            html: html,
+          });
+
+          console.log('✅ Email enviado vía SendGrid');
+          return { message: '¡Reporte enviado correctamente (SendGrid)!', success: true };
+        } catch (sgError) {
+          console.error('⚠️ Error SendGrid:', sgError.response?.body || sgError.message);
+          console.log('🔄 Intentando fallback a SMTP...');
+        }
+      }
+
       try {
-        // 2. Fallback a SMTP (Puede fallar en Render Free)
+        // 3. Fallback a SMTP (Puede fallar en Render Free)
         await this.transporter.sendMail(mailOptions);
 
         console.log('✅ Email enviado exitosamente a', email);
