@@ -62,7 +62,9 @@ export class ReportsService {
     }
 
     for (const a of alerts) {
-      const hora = new Date(a.fecha).getHours();
+      // Ajuste UTC-5 (Ecuador)
+      const fechaEC = new Date(new Date(a.fecha).getTime() - 5 * 60 * 60 * 1000);
+      const hora = fechaEC.getHours();
       hourMap.set(hora, (hourMap.get(hora) || 0) + 1);
     }
 
@@ -107,7 +109,9 @@ export class ReportsService {
     }
 
     for (const a of alerts) {
-      const dia = new Date(a.fecha).getDay(); // 0=Dom, 1=Lun, etc.
+      // Ajuste UTC-5 (Ecuador)
+      const fechaEC = new Date(new Date(a.fecha).getTime() - 5 * 60 * 60 * 1000);
+      const dia = fechaEC.getDay(); // 0=Dom, 1=Lun, etc.
       dayMap.set(dia, (dayMap.get(dia) || 0) + 1);
     }
 
@@ -158,8 +162,9 @@ export class ReportsService {
     }
 
     for (const a of alerts) {
-      const fecha = new Date(a.fecha);
-      const diaDelMes = fecha.getDate();
+      // Ajuste UTC-5 (Ecuador)
+      const fechaEC = new Date(new Date(a.fecha).getTime() - 5 * 60 * 60 * 1000);
+      const diaDelMes = fechaEC.getDate();
       const semana = Math.min(4, Math.ceil(diaDelMes / 7)); // Semana 1-4
       weekMap.set(semana, (weekMap.get(semana) || 0) + 1);
     }
