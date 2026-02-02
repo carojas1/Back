@@ -25,10 +25,11 @@ async function bootstrap() {
       const allowedOrigins = [
         'http://localhost:4200',
         'https://alerta-vision-frontend.vercel.app',
-        'http://localhost',             // Capacitor Android
-        'capacitor://localhost',        // Capacitor iOS/Android
-        'http://192.168.0.105',         // Pruebas LAN
-        'http://192.168.100.9',         // Tu IP típica
+        'http://localhost',             // Capacitor Android (HTTP)
+        'https://localhost',            // Capacitor Android (HTTPS) - ESTE ERA EL BLOQUEO
+        'capacitor://localhost',        // Capacitor iOS
+        'http://192.168.0.105',
+        'http://192.168.100.9',
         'https://alerta-vision-backend.onrender.com'
       ];
 
