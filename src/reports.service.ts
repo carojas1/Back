@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between } from 'typeorm';
 import * as nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 
 // CORRECCIÓN DE RUTAS: Usamos ./ porque estamos en la raiz src
 import { Alert } from './alert.entity';
@@ -13,6 +14,7 @@ type TabKey = 'diario' | 'semanal' | 'mensual';
 @Injectable()
 export class ReportsService {
   private transporter: nodemailer.Transporter;
+  private resend: Resend;
 
   constructor(
     @InjectRepository(Alert)
@@ -20,6 +22,12 @@ export class ReportsService {
     @InjectRepository(ExportHistory)
     private readonly exportHistoryRepository: Repository<ExportHistory>,
   ) {
+    // Configurar Resend (si hay API Key)
+    if (process.env.RESEND_API_KEY) {
+      this.resend = new Resend(process.env.RESEND_API_KEY);
+      console.log('✅ Resend API activado');
+    }
+
     const user = process.env.SMTP_USER || 'alertavision706@gmail.com';
     const pass = process.env.SMTP_PASS || 'whtp jyvo ylae fjga';
 
@@ -435,8 +443,31 @@ export class ReportsService {
         html,
       };
 
+      // 1. Intentar vía Resend (API) - Prioridad Alta
+      if (this.resend) {
+        try {
+          console.log('🚀 Intentando envío vía Resend API...');
+          const { data, error } = await this.resend.emails.send({
+            from: 'Alerta Vision <onboarding@resend.dev>', // Usar dominio verificado para prod
+            to: [email],
+            subject: `Reporte ${normalizedTab} - ${userName}`,
+            html: html,
+          });
+
+          if (error) {
+            console.error('⚠️ Error Resend API:', error.message);
+          } else {
+            console.log('✅ Email enviado vía Resend:', data?.id);
+            return { message: '¡Reporte enviado correctamente (API)!', success: true };
+          }
+        } catch (resendError) {
+          console.error('⚠️ Excepción Resend API:', resendError.message);
+          console.log('🔄 Intentando fallback a SMTP...');
+        }
+      }
+
       try {
-        // Volvemos a await para confirmar si sale o falla
+        // 2. Fallback a SMTP (Puede fallar en Render Free)
         await this.transporter.sendMail(mailOptions);
 
         console.log('✅ Email enviado exitosamente a', email);
