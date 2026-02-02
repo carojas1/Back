@@ -355,9 +355,10 @@ export class ReportsService {
 
       // Guardar historial (con manejo de error)
       try {
-        await this.exportHistoryRepository.save({ email });
+        const saved = await this.exportHistoryRepository.save({ email });
+        console.log('📋 Historial guardado:', saved);
       } catch (e) {
-        console.log('⚠️ No se pudo guardar historial de exportación:', e);
+        console.error('❌ Error guardando historial de exportación:', e.message || e);
       }
 
       let historialHtml = '';
